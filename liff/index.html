@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>パワーストーン診断</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background-color: #f9f9f9; }
+    h1 { color: #333; text-align: center; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background-color: #06c755; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    button:hover { background-color: #05b34c; }
+    #result-area { margin-top: 20px; display: none; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .loading { text-align: center; color: #666; display: none; }
+  </style>
+</head>
+<body>
+  <h1>✨あなただけのブレス診断✨</h1>
+
+  <form id="diagnosis-form">
+    <div class="form-group">
+      <label>今のお悩みは？</label>
+      <select name="problem" required>
+        <option value="">選択してください</option>
+        <option value="恋愛">恋愛・出会い</option>
+        <option value="仕事">仕事・キャリア</option>
+        <option value="人間関係">人間関係・家族</option>
+        <option value="金運">金運・財運</option>
+        <option value="健康">健康・メンタル</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>デザインの希望</label>
+      <select name="design_pref">
+        <option value="simple">シンプル（日常使い）</option>
+        <option value="top">トップにアクセント（石を強調）</option>
+        <option value="colorful">カラフル（華やかに）</option>
+        <option value="pro">おまかせ</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>生年月日</label>
+      <input type="date" name="birth_date" required>
+    </div>
+
+    <div class="form-group">
+      <label>出生時間（不明な場合は12:00）</label>
+      <input type="time" name="birth_time" value="12:00">
+    </div>
+
+    <div class="form-group">
+      <label>出生地（市区町村）</label>
+      <input type="text" name="birth_place" placeholder="例：東京都新宿区" required>
+    </div>
+
+    <div class="form-group">
+      <label>手首サイズ (cm)</label>
+      <input type="number" name="wrist_inner_cm" value="15.0" step="0.5">
+    </div>
+
+    <button type="submit">AIで占う🔮</button>
+  </form>
+
+  <div id="loading" class="loading">
+    <p>星を読み解いています...<br>しばらくお待ちください...</p>
+  </div>
+
+  <div id="result-area">
+    <h2>鑑定結果</h2>
+    <div id="reading-text"></div>
+
+    <h3>ご提案するブレスレット</h3>
+    <p id="design-concept" style="font-weight:bold; color:#555;"></p>
+    <ul id="stones-list"></ul>
+
+    <div style="margin-top:20px; padding-top:10px; border-top:1px dashed #ccc;">
+      <p style="font-size:0.9em; color:#666;">オーダー内容:</p>
+      <p id="order-line" style="font-weight:bold;"></p>
+    </div>
+
+    <button id="order-btn" style="margin-top:15px; background-color:#333;">LINEでオーダーする</button>
+  </div>
+
+  <script>
+    async function main() {
+      // Initialize LIFF
+      // Replace with your actual LIFF ID
+      const MY_LIFF_ID = "YOUR_LIFF_ID"; 
+
+      try {
+        await liff.init({ liffId: MY_LIFF_ID });
+      } catch (err) {
+        console.error("LIFF Init failed", err);
+      }
+
+      const form = document.getElementById("diagnosis-form");
+      const loading = document.getElementById("loading");
+      const resultArea = document.getElementById("result-area");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        // UI Update
+        form.style.display = "none";
+        loading.style.display = "block";
+
+        const fd = new FormData(form);
+
+        // Build JSON payload
+        const payload = {
+          problem: fd.get("problem"),
+          design_pref: fd.get("design_pref"),
+          birth: {
+            date: fd.get("birth_date"),
+            time: fd.get("birth_time"),
+            place: fd.get("birth_place"),
+          },
+          wrist_inner_cm: fd.get("wrist_inner_cm"),
+          // Get LINE User ID if logged in
+          line_user_id: liff.isLoggedIn() ? (await liff.getProfile()).userId : null
+        };
+
+        try {
+          // Call Vercel API
+          const res = await fetch("/api/diagnose", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) throw new Error("API Request failed");
+
+          const data = await res.json();
+          const r = data.result;
+          const o = data.order_summary;
+
+          // Render Results
+          document.getElementById("reading-text").innerText = r.reading;
+          document.getElementById("design-concept").innerText = r.design_concept;
+
+          const list = document.getElementById("stones-list");
+          list.innerHTML = "";
+          r.stones.forEach(s => {
+            const li = document.createElement("li");
+            li.innerText = `${s.name} (${s.count}個) - ${s.reason}`;
+            list.appendChild(li);
+          });
+
+          document.getElementById("order-line").innerText = o.order_line;
+
+          loading.style.display = "none";
+          resultArea.style.display = "block";
+
+          // Handle "Order" button -> Send message to LINE talk
+          document.getElementById("order-btn").onclick = function() {
+             if (liff.isInClient()) {
+               liff.sendMessages([{
+                 type: 'text',
+                 text: `【オーダー希望】
+以下の内容でお願いします！
+
+${o.order_line}
+
+診断ID: ${data.diagnosis_id}`
+               }]).then(() => {
+                 liff.closeWindow();
+               }).catch(err => {
+                 alert("メッセージ送信に失敗しました");
+               });
+             } else {
+               alert("この機能はLINEアプリ内でのみ動作します");
+             }
+          };
+
+        } catch (err) {
+          loading.style.display = "none";
+          form.style.display = "block";
+          alert("エラーが発生しました: " + err.message);
+        }
+      });
+    }
+    main();
+  </script>
+</body>
+</html>
