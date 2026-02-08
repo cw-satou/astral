@@ -1,14 +1,16 @@
+# api/utils_perplexity.py
 import os
 import json
-from perplexity import Perplexity
+from openai import OpenAI  # 変更点: perplexity ではなく openai を使う
 
-# Initialize client (ensure PERPLEXITY_API_KEY is set in environment variables)
-# Note: Adjust initialization based on the specific SDK version you end up using.
-# Here we assume a standard client setup.
-try:
-    client = Perplexity(api_key=os.environ.get("PERPLEXITY_API_KEY"))
-except:
-    client = None # Handle case where key is missing locally
+# APIキーの取得
+PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY")
+
+# クライアント初期化（Perplexityのサーバーを指定）
+client = OpenAI(
+    api_key=PERPLEXITY_API_KEY,
+    base_url="https://api.perplexity.ai"
+)
 
 SYSTEM_PROMPT = """
 あなたは、西洋占星術とクリスタルヒーリングに精通したプロの占い師であり、
@@ -67,31 +69,33 @@ def create_user_prompt(user_input):
 """
 
 def generate_bracelet_reading(user_input: dict) -> dict:
-    if not client:
+    if not PERPLEXITY_API_KEY:
         return {"error": "Perplexity API Key not configured"}
 
     system_msg = SYSTEM_PROMPT
     user_msg = create_user_prompt(user_input)
 
     try:
-        # Check official docs for exact method names (e.g., chat.completions.create)
-        # This is a generic representation matching typical OpenAI-compatible usage
+        # 変更点: client.chat.completions.create を使う
         resp = client.chat.completions.create(
-            model="sonar",
+            model="sonar-pro",  # または "sonar"
             messages=[
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_msg},
             ],
             temperature=0.7,
         )
-
+        
         content = resp.choices[0].message.content
-
-        # Strip potential markdown code blocks if AI adds them
-        if content.startswith("```json"):
-            content = content.replace("```json", "").replace("```", "")
-
+        
+        # JSON部分だけを取り出す処理
+        if "```json" in content:
+            content = content.split("```json").split("```").strip()[1]
+        elif "```" in content:
+             content = content.split("```")[16].split("```")[0].strip()
+        
         return json.loads(content)
-
+        
     except Exception as e:
-        return {"error": str(e), "raw_content": content if 'content' in locals() else ""}
+        print(f"Error: {e}")
+        return {"error": str(e)}
