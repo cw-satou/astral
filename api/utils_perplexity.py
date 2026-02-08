@@ -1,7 +1,7 @@
 # api/utils_perplexity.py
 import os
 import json
-from openai import OpenAI  # 変更点: perplexity ではなく openai を使う
+from openai import OpenAI 
 
 # APIキーの取得
 PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY")
