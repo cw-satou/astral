@@ -2,12 +2,9 @@ from flask import Flask, request, jsonify
 from api.utils_perplexity import generate_bracelet_reading
 from api.utils_order import build_order_summary
 
-app = Flask(__name__)
-
 # Note: In Vercel, this file usually exports 'app' which is handled by WSGI.
 # The route decorator path should match your Vercel rewrites or file structure.
 
-@app.route("/api/diagnose", methods=["POST"])
 def diagnose():
     try:
         data = request.get_json()

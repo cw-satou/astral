@@ -10,8 +10,6 @@ from linebot.v3.webhooks import (
     MessageEvent, TextMessageContent
 )
 
-app = Flask(__name__)
-
 # Initialize LINE API
 # Ensure these environment variables are set in Vercel
 CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
@@ -20,7 +18,6 @@ CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-@app.route("/api/line_webhook", methods=["POST"])
 def callback():
     # Get X-Line-Signature header value
     signature = request.headers.get("X-Line-Signature", "")
