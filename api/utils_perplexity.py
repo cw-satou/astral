@@ -1,27 +1,36 @@
-# api/utils_perplexity.py
 import os
 import json
-from openai import OpenAI 
+import re
+from openai import OpenAI
 
 # APIキーの取得
 PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY")
 
-# クライアント初期化（Perplexityのサーバーを指定）
-client = OpenAI(
-    api_key=PERPLEXITY_API_KEY,
-    base_url="https://api.perplexity.ai"
-)
+# クライアント初期化
+# Perplexity APIはOpenAI互換なので、openaiライブラリを使用します。
+# もしAPIキーがない場合はエラーにならないようNoneにしておきます（実行時にチェック）
+if PERPLEXITY_API_KEY:
+    client = OpenAI(
+        api_key=PERPLEXITY_API_KEY,
+        base_url="https://api.perplexity.ai"
+    )
+else:
+    client = None
 
 SYSTEM_PROMPT = """
-あなたは、西洋占星術とクリスタルヒーリングに精通したプロの占い師であり、
-ジュエリーデザイナーでもあります。
+あなたは、西洋占星術とクリスタルヒーリングに精通したプロの占い師であり、ジュエリーデザイナーです。
 ユーザーの悩みに寄り添い、希望を与え、具体的な解決策としてパワーストーンブレスレットを提案してください。
 
-【重要な制約事項】
-1. 出力は必ずJSON形式のみを行ってください。余計な挨拶やMarkdown装飾は不要です。
-2. JSONの構造は指定されたスキーマを厳守してください。
-3. 石の選定は、以下の「使用可能な石リスト」の中から選んでください。リストにない石は使わないでください。
-4. 鑑定結果の文章は、ユーザーに語りかけるような、優しく神秘的な口調（です・ます調）で書いてください。
+【出力形式の絶対ルール】
+1. **JSON形式**のみを出力すること。Markdownのコードブロック（```json）は不要です。
+2. **引用表記（, など）は絶対に含まないこと。**[1][2]
+3. 文章は適度に改行し、読みやすくすること。
+
+【鑑定文（reading）の構成ルール】
+以下の構成で、各セクションの間に改行を入れてください。
+- **【現状の星回り】**: ホロスコープから読み解く現状
+- **【原因と課題】**: 悩みの根本原因
+- **【未来へのアドバイス】**: 今後の指針と解決策
 """
 
 AVAILABLE_STONES = """
@@ -42,6 +51,7 @@ def create_user_prompt(user_input):
 以下のユーザー情報に基づき、ホロスコープを読み解き、最適なパワーストーンブレスレットを設計してください。
 
 【ユーザー情報】
+- 性別: {user_input.get('gender', '指定なし')}
 - 悩み: {user_input.get('problem')}
 - デザインの希望: {user_input.get('design_pref')}
 - 生年月日: {user_input['birth'].get('date')}
@@ -51,34 +61,33 @@ def create_user_prompt(user_input):
 【使用可能な石リスト】
 {AVAILABLE_STONES}
 
-【出力JSONフォーマット】
+【出力JSONスキーマ】
 {{
-  "reading": "（400文字以内の鑑定結果。星の配置（太陽星座、月星座など）に触れながら、なぜ今の悩みが生じているのか、どうすれば解決に向かうかを優しく説く文章）",
+  "reading": "（400文字以内の鑑定結果。必ず【小見出し】を使い、段落ごとに改行を入れて読みやすくすること。引用表記などは削除すること）",[1]
   "stones": [
     {{
       "name": "（石の名前）",
-      "reason": "（その石を選んだ理由。占星術的な根拠や石の効果）",
+      "reason": "（その石を選んだ理由）",
       "count": （個数・整数）,
       "position": "（top / side / base / accent のいずれか）"
     }}
   ],
-  "design_concept": "（ブレスレットのデザインテーマ。例：「夜明けの空」「桜舞う小道」など、情景が浮かぶようなタイトル）",
-  "design_text": "（デザインの解説。色の組み合わせや配置の意図など、150文字以内）",
+  "design_concept": "（ブレスレットのデザインテーマ）",
+  "design_text": "（デザインの解説。150文字以内）",
   "sales_copy": "（商品としての魅力的な紹介文。200文字以内）"
 }}
 """
 
 def generate_bracelet_reading(user_input: dict) -> dict:
-    if not PERPLEXITY_API_KEY:
+    if not client:
         return {"error": "Perplexity API Key not configured"}
 
     system_msg = SYSTEM_PROMPT
     user_msg = create_user_prompt(user_input)
 
     try:
-        # 変更点: client.chat.completions.create を使う
         resp = client.chat.completions.create(
-            model="sonar-pro",  # または "sonar"
+            model="sonar-pro", # または "sonar"
             messages=[
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_msg},
@@ -86,16 +95,21 @@ def generate_bracelet_reading(user_input: dict) -> dict:
             temperature=0.7,
         )
         
-        content = resp.choices[0].message.content
+        content = resp.choices.message.content
         
-        # JSON部分だけを取り出す処理
+        # 1. Markdownのコードブロック削除
         if "```json" in content:
-            content = content.split("```json").split("```").strip()[1]
+            content = content.split("```json")[1].split("```")[0].strip()
         elif "```" in content:
-             content = content.split("```")[16].split("```")[0].strip()
+             content = content.split("```").split("```").strip()[1]
+
+        # 2. 引用表記（, など）を正規表現で強制削除[3][1]
+        content = re.sub(r'\[\d+\]', '', content)
         
+        # 3. JSONロード
         return json.loads(content)
         
     except Exception as e:
-        print(f"Error: {e}")
-        return {"error": str(e)}
+        print(f"Perplexity API Error: {e}")
+        # 万が一JSONパースに失敗した場合などはエラーを返す
+        return {"error": str(e), "raw_content": content if 'content' in locals() else ""}
