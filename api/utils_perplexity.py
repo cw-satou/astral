@@ -7,8 +7,6 @@ from openai import OpenAI
 PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY")
 
 # クライアント初期化
-# Perplexity APIはOpenAI互換なので、openaiライブラリを使用します。
-# もしAPIキーがない場合はエラーにならないようNoneにしておきます（実行時にチェック）
 if PERPLEXITY_API_KEY:
     client = OpenAI(
         api_key=PERPLEXITY_API_KEY,
@@ -23,7 +21,7 @@ SYSTEM_PROMPT = """
 
 【出力形式の絶対ルール】
 1. **JSON形式**のみを出力すること。Markdownのコードブロック（```json）は不要です。
-2. **引用表記（, など）は絶対に含まないこと。**[1][2]
+2. **引用表記（[1], [2]など）は絶対に含まないこと。**
 3. 文章は適度に改行し、読みやすくすること。
 
 【鑑定文（reading）の構成ルール】
@@ -47,23 +45,26 @@ AVAILABLE_STONES = """
 """
 
 def create_user_prompt(user_input):
+    # 安全にデータを取り出す（KeyError防止）
+    birth = user_input.get('birth', {})
+
     return f"""
 以下のユーザー情報に基づき、ホロスコープを読み解き、最適なパワーストーンブレスレットを設計してください。
 
 【ユーザー情報】
 - 性別: {user_input.get('gender', '指定なし')}
-- 悩み: {user_input.get('problem')}
-- デザインの希望: {user_input.get('design_pref')}
-- 生年月日: {user_input['birth'].get('date')}
-- 出生時間: {user_input['birth'].get('time')}
-- 出生地: {user_input['birth'].get('place')}
+- 悩み: {user_input.get('problem', '指定なし')}
+- デザインの希望: {user_input.get('design_pref', '指定なし')}
+- 生年月日: {birth.get('date', '不明')}
+- 出生時間: {birth.get('time', '不明')}
+- 出生地: {birth.get('place', '不明')}
 
 【使用可能な石リスト】
 {AVAILABLE_STONES}
 
 【出力JSONスキーマ】
 {{
-  "reading": "（400文字以内の鑑定結果。必ず【小見出し】を使い、段落ごとに改行を入れて読みやすくすること。引用表記などは削除すること）",[1]
+  "reading": "（400文字以内の鑑定結果。必ず【小見出し】を使い、段落ごとに改行を入れて読みやすくすること。引用表記[1]などは削除すること）",
   "stones": [
     {{
       "name": "（石の名前）",
@@ -87,29 +88,28 @@ def generate_bracelet_reading(user_input: dict) -> dict:
 
     try:
         resp = client.chat.completions.create(
-            model="sonar-pro", # または "sonar"
+            model="sonar-pro", 
             messages=[
                 {"role": "system", "content": system_msg},
                 {"role": "user", "content": user_msg},
             ],
             temperature=0.7,
         )
-        
-        content = resp.choices.message.content
-        
+
+        content = resp.choices[0].message.content
+
         # 1. Markdownのコードブロック削除
         if "```json" in content:
             content = content.split("```json")[1].split("```")[0].strip()
         elif "```" in content:
-             content = content.split("```").split("```").strip()[1]
+             content = content.split("```")[1].split("```")[0].strip()
 
-        # 2. 引用表記（, など）を正規表現で強制削除[3][1]
+        # 2. 引用表記（[1], [10]など）を正規表現で強制削除
         content = re.sub(r'\[\d+\]', '', content)
-        
+
         # 3. JSONロード
         return json.loads(content)
-        
+
     except Exception as e:
         print(f"Perplexity API Error: {e}")
-        # 万が一JSONパースに失敗した場合などはエラーを返す
-        return {"error": str(e), "raw_content": content if 'content' in locals() else ""}
+        return {"error": str(e)}
