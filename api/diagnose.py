@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from api.utils_perplexity import generate_bracelet_reading
 from api.utils_order import build_order_summary
+from api.utils_sheet import save_to_sheet
+import uuid
 import json
 
 def diagnose():
@@ -39,10 +41,10 @@ def diagnose():
 
         order_summary = build_order_summary(result, wrist_inner_cm, bead_size_mm)
 
-        # 4. (TODO) Save to Google Sheets or Database here
-        # save_to_db(data, result, order_summary)
+        diagnosis_id = str(uuid.uuid4())[:8] 
 
-        diagnosis_id = "diag_sample_12345"
+        # 4. Save to Google Sheets
+        save_to_sheet(data, result, diagnosis_id)
 
         return jsonify({
             "diagnosis_id": diagnosis_id,
