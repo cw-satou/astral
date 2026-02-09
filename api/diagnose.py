@@ -163,112 +163,83 @@ def build_bracelet_design(stones_for_user: list, wrist_inner_cm: float, bead_siz
             "design_concept": "未指定",
             "design_text": "石の候補が取得できませんでした。"
         }
-    
-    # 必要な粒数をざっくり計算（ゴムの余裕を含む）
+
+    # 1番・2番の石だけを使う前提
+    main = stones_for_user[0]                    # 一番おすすめ
+    second = stones_for_user[1] if len(stones_for_user) > 1 else stones_for_user[0]  # 二番目（なければ同じ）
+
+    # 必要な粒数を計算
     bracelet_length_mm = wrist_inner_cm * 10 + 10
     total_bead_count = max(12, int(bracelet_length_mm / bead_size_mm))
-    
-    # メイン・サブを分ける
-    main = stones_for_user[0]
-    subs = stones_for_user[1:] if len(stones_for_user) > 1 else stones_for_user
-    
+
     stones = []
-    
-    # デザインスタイルに応じた配置
+
     if design_style == "単色（シンプル）":
-        # メイン石だけ
+        # 1色：一番おすすめの石だけ
         stones.append({
             "name": main["name"],
             "reason": main["reason"],
             "count": total_bead_count,
             "position": "top"
         })
-    
+
     elif design_style == "２色（混合）":
-        # メイン：60% サブ：40%
+        # 2色：1番と2番の石を同じサイズで、6:4 くらいの配分
         main_count = int(total_bead_count * 0.6)
-        sub_count = total_bead_count - main_count
-        
+        second_count = total_bead_count - main_count
+
         stones.append({
             "name": main["name"],
             "reason": main["reason"],
             "count": main_count,
             "position": "top"
         })
-        
-        if subs:
-            stones.append({
-                "name": subs[0]["name"],
-                "reason": subs[0]["reason"],
-                "count": sub_count,
-                "position": "side"
-            })
-    
+        stones.append({
+            "name": second["name"],
+            "reason": second["reason"],
+            "count": second_count,
+            "position": "side"
+        })
+
     elif design_style == "トップを入れる":
-        # 中央にトップストーン（大きめ天然石を想定）
-        main_count = max(1, int(total_bead_count * 0.35))
-        remaining = total_bead_count - main_count - 1
-        
+        # トップ：1番の石を1粒だけトップに、2番目の石を周りに敷き詰める
+        # 周りの石の個数
+        surrounding_count = max(11, total_bead_count - 1)
+
         stones.append({
             "name": main["name"],
             "reason": main["reason"],
-            "count": main_count,
-            "position": "top"
-        })
-        
-        if subs:
-            for sub in subs[:2]:  # 最大2種類のサブストーン
-                sub_count = min(max(1, remaining // 2), remaining)
-                if sub_count > 0:
-                    stones.append({
-                        "name": sub["name"],
-                        "reason": sub["reason"],
-                        "count": sub_count,
-                        "position": "side"
-                    })
-                    remaining -= sub_count
-        
-        # トップストーン（特別）
-        stones.append({
-            "name": main["name"],
-            "reason": "トップストーン",
             "count": 1,
-            "position": "accent"
+            "position": "accent"   # トップ
         })
-    
-    else:  # おまかせ（デフォルト）
-        # バランス重視：メイン40% + サブ各種
-        main_count = max(1, int(total_bead_count * 0.4))
-        remaining = total_bead_count - main_count
-        
+        stones.append({
+            "name": second["name"],
+            "reason": second["reason"],
+            "count": surrounding_count,
+            "position": "top"      # 周囲を埋める石
+        })
+
+    else:  # おまかせ
+        # デフォルトはバランス型：1番と2番を 5:5 くらい
+        main_count = total_bead_count // 2
+        second_count = total_bead_count - main_count
+
         stones.append({
             "name": main["name"],
             "reason": main["reason"],
             "count": main_count,
             "position": "top"
         })
-        
-        if subs:
-            per_sub = max(1, remaining // len(subs))
-            for sub in subs:
-                sub_count = min(per_sub, remaining)
-                if sub_count > 0:
-                    stones.append({
-                        "name": sub["name"],
-                        "reason": sub["reason"],
-                        "count": sub_count,
-                        "position": "side"
-                    })
-                    remaining -= sub_count
-        
-        # 余った粒をメインに足す
-        if remaining > 0 and stones:
-            stones[0]["count"] += remaining
-    
-    design_concept = f"「{main['name']}」を中心としたメディテーションブレス（デザイン：{design_style}）"
-    
+        stones.append({
+            "name": second["name"],
+            "reason": second["reason"],
+            "count": second_count,
+            "position": "side"
+        })
+
+    design_concept = f"「{main['name']}」と「{second['name']}」で仕上げるブレス（デザイン：{design_style}）"
     design_text = generate_design_text(main, stones, design_style)
-    
+
     return {
         "stones": stones,
         "design_concept": design_concept,
