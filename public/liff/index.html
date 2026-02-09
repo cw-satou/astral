@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>星の羅針盤 - 占い×ブレスレット</title>
+    <title>Astral Compass - 星の羅針盤</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -128,13 +128,6 @@
             margin-bottom: 8px;
             font-weight: bold;
         }
-        .result-section h4 {
-            font-size: 14px;
-            color: #764ba2;
-            margin-top: 12px;
-            margin-bottom: 6px;
-            font-weight: bold;
-        }
         .result-section p {
             font-size: 14px;
             line-height: 1.8;
@@ -187,9 +180,10 @@
 
     <script>
         const API_BASE = '/api';
-        let userState = 'gender';
+        let userState = 'mode_select';
         let formData = {};
         let divinationResult = null;
+        let selectedMode = null; // 'divination' or 'stone_select'
 
         // ===== あいさつメッセージ =====
         function getGreetingMessage() {
@@ -210,9 +204,14 @@
             const box = document.getElementById('chatBox');
             const div = document.createElement('div');
             div.className = `msg ${isUser ? 'user' : 'bot'}`;
-            div.textContent = text;
+            div.innerHTML = formatText(text);
             box.appendChild(div);
             box.scrollTop = box.scrollHeight;
+        }
+
+        function formatText(text) {
+            // **text** を <strong>text</strong> に変換
+            return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         }
 
         function setInputArea(html) {
@@ -221,6 +220,102 @@
 
         function clearInputArea() {
             setInputArea('');
+        }
+
+        // ===== モード選択（最初の2択） =====
+        function stepModeSelect() {
+            userState = 'mode_select';
+            addMsg('どちらの方法で石を選びますか？', false);
+            setInputArea(`
+                <button class="btn" onclick="selectMode('divination')">✨ 石の魔法の導きを得る（占い）</button>
+                <button class="btn btn-secondary" onclick="selectMode('stone_select')">💎 好みの石から魔法を得る</button>
+            `);
+        }
+
+        function selectMode(mode) {
+            selectedMode = mode;
+            if (mode === 'divination') {
+                addMsg('石の魔法の導きを得る', true);
+                stepGender();
+            } else {
+                addMsg('好みの石から魔法を得る', true);
+                stepStoneSelectMethod();
+            }
+        }
+
+        // ===== 石選択フロー =====
+        function stepStoneSelectMethod() {
+            addMsg('どの方法で石を選びますか？', false);
+            setInputArea(`
+                <div class="btn-group">
+                    <button class="btn-toggle active" onclick="selectStoneMethod('color', this)">色</button>
+                    <button class="btn-toggle" onclick="selectStoneMethod('effect', this)">効果</button>
+                    <button class="btn-toggle" onclick="selectStoneMethod('zodiac', this)">星座</button>
+                    <button class="btn-toggle" onclick="selectStoneMethod('moon', this)">月</button>
+                </div>
+                <button class="btn" onclick="showStoneOptions()">次へ</button>
+            `);
+        }
+
+        function selectStoneMethod(method, el) {
+            formData.stone_method = method;
+            document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function showStoneOptions() {
+            const method = formData.stone_method || 'color';
+            addMsg(method, true);
+            
+            let options = [];
+            if (method === 'color') {
+                options = ['紫', 'ピンク', '黄', '透明', '黒', '水色', '紺', '茶金', '白', '赤'];
+            } else if (method === 'effect') {
+                options = ['愛情', '癒し', '金運', '浄化', '保護', '直感', '情熱', '女性性'];
+            } else if (method === 'zodiac') {
+                options = ['牡羊座', '牡牛座', '双子座', '蟹座', '獅子座', '乙女座', '天秤座', '蠍座', '射手座', '山羊座', '水瓶座', '魚座'];
+            } else {
+                options = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            }
+
+            addMsg(`${method}を選んでください`, false);
+            let html = '<div class="btn-group">';
+            options.forEach(opt => {
+                html += `<button class="btn-toggle" onclick="selectStoneOption('${opt}', this)">${opt}</button>`;
+            });
+            html += '</div><button class="btn" onclick="confirmStoneSelection()">この石で進む</button>';
+            setInputArea(html);
+        }
+
+        function selectStoneOption(option, el) {
+            formData.stone_option = option;
+            document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function confirmStoneSelection() {
+            const option = formData.stone_option;
+            if (!option) {
+                addMsg('選択してください', false);
+                return;
+            }
+            addMsg(option, true);
+            
+            // 石候補を作る（簡易版）
+            const stoneMap = {
+                '紫': 'アメジスト', 'ピンク': 'ローズクォーツ', '黄': 'シトリン', '透明': '水晶',
+                '黒': 'オニキス', '水色': 'アクアマリン', '紺': 'ラピスラズリ', '茶金': 'タイガーアイ',
+                '白': 'ムーンストーン', '赤': 'カーネリアン'
+            };
+            const selectedStone = stoneMap[option] || 'アメジスト';
+            
+            divinationResult = {
+                stones_for_user: [
+                    { name: selectedStone, reason: `${option}を選んだあなたにぴったりの石です` }
+                ]
+            };
+            
+            stepBraceletSize();
         }
 
         // ===== ステップ: 性別 =====
@@ -369,50 +464,53 @@
         function displayDivinationResult(result) {
             clearInputArea();
 
+            // 【】見出しを削除してから表示
+            const cleanText = (text) => text ? text.replace(/【.+?】/g, '') : '';
+
             if (result.destiny_map) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
-                section.innerHTML = `<h3>【運命の地図】</h3><p>${result.destiny_map}</p>`;
+                section.innerHTML = `<h3>運命の地図</h3><p>${formatText(cleanText(result.destiny_map))}</p>`;
                 document.getElementById('chatBox').appendChild(section);
             }
 
             if (result.past) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
-                section.innerHTML = `<h3>【過去】</h3><p>${result.past}</p>`;
+                section.innerHTML = `<h3>過去</h3><p>${formatText(cleanText(result.past))}</p>`;
                 document.getElementById('chatBox').appendChild(section);
             }
 
             if (result.present) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
-                section.innerHTML = `<h3>【現在】</h3><p>${result.present}</p>`;
+                section.innerHTML = `<h3>現在</h3><p>${formatText(cleanText(result.present))}</p>`;
                 document.getElementById('chatBox').appendChild(section);
             }
 
             if (result.future) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
-                section.innerHTML = `<h3>【未来】</h3><p>${result.future}</p>`;
+                section.innerHTML = `<h3>未来</h3><p>${formatText(cleanText(result.future))}</p>`;
                 document.getElementById('chatBox').appendChild(section);
             }
 
             if (result.element_diagnosis) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
-                section.innerHTML = `<h3>【エレメント診断】</h3><p>${result.element_diagnosis}</p>`;
+                section.innerHTML = `<h3>エレメント診断</h3><p>${formatText(cleanText(result.element_diagnosis))}</p>`;
                 document.getElementById('chatBox').appendChild(section);
             }
 
             if (result.oracle_card) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
-                let html = `<h3>【オラクルカード】</h3><p>${result.oracle_card.name}</p>`;
+                let html = `<h3>オラクルカード</h3><p>${result.oracle_card.name}</p>`;
                 if (result.oracle_card.image_url) {
                     const transform = result.oracle_card.is_upright ? '' : 'transform: scaleY(-1);';
                     html += `<img src="${result.oracle_card.image_url}" class="result-image" style="${transform}" onerror="this.style.display='none'">`;
                 }
-                html += `<p>${result.oracle_message || result.oracle_card.meaning}</p>`;
+                html += `<p>${formatText(cleanText(result.oracle_message || result.oracle_card.meaning))}</p>`;
                 section.innerHTML = html;
                 document.getElementById('chatBox').appendChild(section);
             }
@@ -439,7 +537,7 @@
             if (result.bracelet_proposal) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
-                section.innerHTML = `<h3>【石の提案】</h3><p>${result.bracelet_proposal}</p>`;
+                section.innerHTML = `<h3>石の提案</h3><p>${formatText(cleanText(result.bracelet_proposal))}</p>`;
                 document.getElementById('chatBox').appendChild(section);
             }
 
@@ -447,7 +545,7 @@
 
             setInputArea(`
                 <button class="btn" onclick="stepBraceletSize()">💍 ブレスレット設定へ進む</button>
-                <button class="btn btn-secondary" onclick="location.reload()">🔄 もう一度占う</button>
+                <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
             `);
         }
 
@@ -455,19 +553,22 @@
         function stepBraceletSize() {
             addMsg('ブレスレットのサイズとデザインを選んでください。', false);
 
+            const savedWrist = formData.wrist_inner_cm || 15.0;
+            const savedBead = formData.bead_size_mm || 8;
+
             setInputArea(`
                 <div class="input-field">
                     <label>手首の内径（cm）</label>
-                    <input type="number" id="wristInner" step="0.5" value="15.0" min="10" max="25">
+                    <input type="number" id="wristInner" step="0.5" value="${savedWrist}" min="10" max="25">
                     <small style="color:#999;">手首の最も細い部分を測ってください</small>
                 </div>
                 <div class="input-field">
                     <label>石の大きさ（mm）</label>
                     <select id="beadSize">
-                        <option value="6">6mm（細めで華奢）</option>
-                        <option value="8" selected>8mm（標準）</option>
-                        <option value="10">10mm（太めで存在感）</option>
-                        <option value="12">12mm（ボリューム重視）</option>
+                        <option value="6" ${savedBead == 6 ? 'selected' : ''}>6mm（細めで華奢）</option>
+                        <option value="8" ${savedBead == 8 ? 'selected' : ''}>8mm（標準）</option>
+                        <option value="10" ${savedBead == 10 ? 'selected' : ''}>10mm（太めで存在感）</option>
+                        <option value="12" ${savedBead == 12 ? 'selected' : ''}>12mm（ボリューム重視）</option>
                     </select>
                 </div>
                 <div class="input-field">
@@ -494,6 +595,9 @@
             const wrist = parseFloat(document.getElementById('wristInner')?.value || 15.0);
             const beadSize = parseInt(document.getElementById('beadSize')?.value || 8);
             const designStyle = formData.design_style || 'おまかせ';
+
+            formData.wrist_inner_cm = wrist;
+            formData.bead_size_mm = beadSize;
 
             addMsg(`手首内径: ${wrist}cm / 石サイズ: ${beadSize}mm / デザイン: ${designStyle}`, true);
 
@@ -545,7 +649,7 @@
                 html += `<img src="${divinationResult.stones_image_url}" class="result-image" onerror="this.style.display='none'">`;
             }
 
-            html += `<p>${data.design_text || 'デザイン情報がありません'}</p>`;
+            html += `<p>${formatText(data.design_text || 'デザイン情報がありません')}</p>`;
 
             section.innerHTML = html;
             document.getElementById('chatBox').appendChild(section);
@@ -559,24 +663,41 @@
 
             document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
 
-            // プロフィール保存（次回用）
+            // プロフィール＋サイズ保存
             const savedProfile = {
                 gender: formData.gender,
-                birth: formData.birth
+                birth: formData.birth,
+                wrist_inner_cm: formData.wrist_inner_cm,
+                bead_size_mm: formData.bead_size_mm
             };
             localStorage.setItem('hoshin-proifle', JSON.stringify(savedProfile));
 
             setInputArea(`
                 <button class="btn" onclick="confirmOrder()">📱 LINEでオーダーする</button>
-                <button class="btn btn-secondary" onclick="location.reload()">🔄 最初から始める</button>
+                <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
             `);
         }
 
-        // ===== オーダー確認（ダミー） =====
+        // ===== オーダー確認 =====
         function confirmOrder() {
             addMsg('ありがとうございます！オーダー情報を送信しました。', false);
             clearInputArea();
             addMsg('メールで確認が来ます。お待ちください ✨', false);
+        }
+
+        // ===== もう一度占う（前回情報使う） =====
+        function restartFromBeginning() {
+            document.getElementById('chatBox').innerHTML = '';
+            const greeting = getGreetingMessage();
+            document.getElementById('chatBox').innerHTML = `<div class="msg bot">${greeting}</div>`;
+            
+            const saved = localStorage.getItem('hoshin-proifle');
+            if (saved) {
+                formData = JSON.parse(saved);
+                askReuseProfile();
+            } else {
+                stepModeSelect();
+            }
         }
 
         // ===== プロフィール再利用 =====
@@ -585,7 +706,9 @@
             const summary = [
                 `性別：${formData.gender || '未設定'}`,
                 `生年月日：${birth.date || '未設定'}`,
-                `出生地：${birth.place || '未設定'}`
+                `出生地：${birth.place || '未設定'}`,
+                `手首内径：${formData.wrist_inner_cm || 15.0}cm`,
+                `石サイズ：${formData.bead_size_mm || 8}mm`
             ].join('\n');
 
             addMsg('前回のプロフィール情報を見つけました。', false);
@@ -598,13 +721,14 @@
         }
 
         function reuseProfile() {
+            selectedMode = 'divination';
             stepConcernsOnly();
         }
 
         function resetProfile() {
             formData = {};
             document.getElementById('chatBox').innerHTML = `<div class="msg bot">${getGreetingMessage()}</div>`;
-            stepGender();
+            stepModeSelect();
         }
 
         // ===== 2回目以降: 悩みだけ聞くフロー =====
@@ -699,7 +823,7 @@
                 formData = JSON.parse(saved);
                 askReuseProfile();
             } else {
-                stepGender();
+                stepModeSelect();
             }
         };
     </script>
