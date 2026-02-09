@@ -4,8 +4,10 @@ import re
 import random
 from openai import OpenAI
 
+
 # APIキーの取得
 PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY")
+
 
 if PERPLEXITY_API_KEY:
     client = OpenAI(
@@ -14,6 +16,7 @@ if PERPLEXITY_API_KEY:
     )
 else:
     client = None
+
 
 # 天然石オラクルカードの定義
 CRYSTAL_ORACLE_CARDS = [
@@ -51,14 +54,16 @@ CRYSTAL_ORACLE_CARDS = [
     }
 ]
 
+
 SYSTEM_PROMPT = """
-あなたは、西洋占星術とクリスタルヒーリングに精通したプロの占い師であり、ジュエリーデザイナーです。
-ユーザーの悩みに寄り添い、希望を与え、具体的な解決策としてパワーストーンブレスレットを提案してください。
+あなたは、西洋占星術とクリスタルヒーリングに精通したプロの占い師です。
+ユーザーの悩みに寄り添い、希望を与え、まずは「相性の良い石の種類」を提案してください。
 
 【出力形式の絶対ルール】
 1. JSON形式のみを出力すること。Markdownのコードブロックは不要。
 2. 引用表記（[1]など）は削除すること。
 3. ユーザーの「悩み詳細」を深く読み取り、共感のこもった鑑定を行うこと。
+4. この段階ではブレスレットの個数・配置は決めず、「あなたにマッチする石」だけを提案します。
 
 【鑑定文の構成】
 各セクションは以下のとおりで、段落を分けて出力してください：
@@ -68,8 +73,9 @@ SYSTEM_PROMPT = """
 - 【未来】：これから開いていく可能性
 - 【エレメント診断】：火・地・風・水のバランスと不足要素
 - 【オラクルカードのメッセージ】：カードの正逆を踏まえたメッセージ
-- 【ブレスレット提案】：どんな意図で石を選んだか、どんな願いをサポートするか
+- 【石の提案】：どんな意図で石を選んだか、どんな願いをサポートするか
 """
+
 
 AVAILABLE_STONES = """
 - アメジスト（紫）
@@ -83,6 +89,7 @@ AVAILABLE_STONES = """
 - ムーンストーン（白）
 - カーネリアン（赤）
 """
+
 
 def create_user_prompt(user_input, oracle_result):
     """ユーザー情報とオラクル結果からプロンプトを生成"""
@@ -117,29 +124,25 @@ def create_user_prompt(user_input, oracle_result):
 【出力JSONスキーマ】
 
 {{
-  "destiny_map": "【運命の地図】セクション。全体のテーマ・運命の地図を200文字程度で",
+  "destiny_map": "【運命の地図】全体のテーマ・運命の地図を200文字程度で",
   "past": "【過去】生まれ持った資質・これまでの流れを150文字程度で",
   "present": "【現在】今の課題・テーマを150文字程度で",
   "future": "【未来】これから開いていく可能性を150文字程度で",
-  "element_diagnosis": "【エレメント診断】火・地・風・水のバランスと不足している要素、そのアドバイスを150文字程度で",
-  "oracle_message": "【オラクルカードのメッセージ】引いたカード「{oracle_result['card']['name']}」の{position_str}の詳細なメッセージを150文字程度で",
-  "bracelet_proposal": "【ブレスレット提案】どんな意図で石を選び、どんな願いをサポートするか、その組み合わせにどんなメッセージが込められているかを200文字程度で",
-  "stones": [
+  "element_diagnosis": "【エレメント診断】火・地・風・水のバランスと不足要素、アドバイスを150文字程度で",
+  "oracle_message": "【オラクルカードのメッセージ】引いたカード「{oracle_result['card']['name']}」の{position_str}の詳細メッセージを150文字程度で",
+  "bracelet_proposal": "【石の提案】どんな意図で石を選び、どんな願いをサポートするか、200文字程度で",
+  "stones_for_user": [
     {{
-      "name": "（石の名前）",
-      "reason": "（その石を選んだ理由）",
-      "count": 12,
-      "position": "top"
+      "name": "石の名前",
+      "reason": "その石を選んだ理由（悩みとの関係を説明）"
     }}
-  ],
-  "design_concept": "（ブレスレットのデザインテーマ）",
-  "design_text": "（デザインの解説）",
-  "sales_copy": "（商品紹介文）"
+  ]
 }}
 """
 
+
 def generate_bracelet_reading(user_input: dict) -> dict:
-    """ユーザー情報に基づき、オラクルカード・鑑定・ブレスレット提案を生成"""
+    """ユーザー情報に基づき、オラクルカード・鑑定・石の提案を生成"""
     if not client:
         return {"error": "Perplexity API Key not configured"}
 
@@ -157,7 +160,10 @@ def generate_bracelet_reading(user_input: dict) -> dict:
     # 2. AI鑑定実行
     system_msg = SYSTEM_PROMPT
     user_msg = create_user_prompt(user_input, oracle_result)
-    print("RAW RESPONSE:", system_msg, user_msg)
+    print("=== SYSTEM PROMPT ===")
+    print(system_msg)
+    print("=== USER PROMPT ===")
+    print(user_msg)
 
     try:
         resp = client.chat.completions.create(
@@ -169,10 +175,13 @@ def generate_bracelet_reading(user_input: dict) -> dict:
             temperature=0.7,
             max_tokens=2000
         )
-        print("RAW RESPONSE:", resp)
+        
+        print("=== RESPONSE OBJECT ===")
+        print(resp)
 
         content = resp.choices[0].message.content
-        print("RAW RESPONSE:", content)
+        print("=== RAW CONTENT ===")
+        print(content)
 
         # JSONクリーニング
         if "```json" in content:
@@ -182,19 +191,26 @@ def generate_bracelet_reading(user_input: dict) -> dict:
 
         # 引用表記削除
         content = re.sub(r'\[\d+\]', '', content)
-        print("RAW RESPONSE:", content)
+        
+        print("=== CLEANED CONTENT ===")
+        print(content)
 
-        result = json.loads(content)
+        try:
+            result = json.loads(content)
+        except json.JSONDecodeError as e:
+            print(f"JSON Decode Error: {e}")
+            print(f"Failed content (first 500 chars): {content[:500]}")
+            return {"error": f"AI response parse error: {str(e)}"}
 
         # 3. 画像生成URL (Pollinations.ai)
         # オラクルカード画像
         card_prompt = f"oracle card art of {card['en']}, mystical glowing gemstone, divine light, intricate golden border, fantasy art, tarot style, high quality, 8k"
         card_image_url = f"https://image.pollinations.ai/prompt/{card_prompt.replace(' ', '%20')}?width=400&height=600&seed={random.randint(0,9999)}"
 
-        # ブレスレット画像
-        stone_names_en = ", ".join([s['name'] for s in result.get('stones', [])])
-        bracelet_prompt = f"gemstone bracelet, {stone_names_en}, jewelry photography, soft lighting, white background, high quality, 8k"
-        bracelet_image_url = f"https://image.pollinations.ai/prompt/{bracelet_prompt.replace(' ', '%20')}?width=600&height=400&seed={random.randint(0,9999)}"
+        # 石候補の画像
+        stone_names_en = ", ".join([s['name'] for s in result.get('stones_for_user', [])])
+        stones_prompt = f"gemstone collection, {stone_names_en}, crystal photography, soft lighting, white background, high quality, 8k"
+        stones_image_url = f"https://image.pollinations.ai/prompt/{stones_prompt.replace(' ', '%20')}?width=600&height=400&seed={random.randint(0,9999)}"
 
         # 結果に統合
         result['oracle_card'] = {
@@ -204,10 +220,13 @@ def generate_bracelet_reading(user_input: dict) -> dict:
             'image_url': card_image_url
         }
 
-        result['bracelet_image_url'] = bracelet_image_url
+        result['stones_image_url'] = stones_image_url
+        result['phase'] = 'stones_only'  # フロント側で判別用
 
         return result
 
     except Exception as e:
         print(f"Perplexity API Error: {e}")
+        import traceback
+        traceback.print_exc()
         return {"error": str(e)}
