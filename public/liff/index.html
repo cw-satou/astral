@@ -406,8 +406,10 @@
             formData.problem = problem;
             addMsg(problem || '（記述なし）', true);
 
-            // 前回の生年月日情報をチェック
+            // 前回の生年月日情報をチェック（formDataに既に入っているはず）
             const savedBirth = formData.birth;
+            console.log('Current formData.birth:', savedBirth);
+            
             if (savedBirth && savedBirth.date) {
                 askBirthInfoConfirm();
             } else {
@@ -482,6 +484,7 @@
             }
 
             formData.birth = { date, time, place };
+            console.log('Saving birth info:', formData.birth);
             addMsg(`${date} (${time || '時間不明'}) 出生地:${place || '不明'}`, true);
 
             setInputArea(`
@@ -752,13 +755,14 @@
 
             document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
 
-            // プロフィール＋サイズ＋生年月日情報を保存
+            // ===== 【修正】プロフィール＋サイズ＋生年月日情報を保存 =====
             const savedProfile = {
                 gender: formData.gender,
                 birth: formData.birth,
                 wrist_inner_cm: formData.wrist_inner_cm,
                 bead_size_mm: formData.bead_size_mm
             };
+            console.log('Saving profile:', savedProfile);
             localStorage.setItem('hoshin-proifle', JSON.stringify(savedProfile));
 
             setInputArea(`
@@ -781,8 +785,10 @@
             document.getElementById('chatBox').innerHTML = `<div class="msg bot">${greeting}</div>`;
             
             const saved = localStorage.getItem('hoshin-proifle');
+            console.log('Loaded from storage:', saved);
             if (saved) {
                 formData = JSON.parse(saved);
+                console.log('Parsed formData:', formData);
                 askReuseProfile();
             } else {
                 stepModeSelect();
@@ -810,7 +816,8 @@
         }
 
         function reuseProfile() {
-            // この情報を使う → モード選択へ
+            // この情報を使う → モード選択へ（formData は保持されたまま）
+            console.log('Reusing profile with formData:', formData);
             stepModeSelect();
         }
 
@@ -837,6 +844,7 @@
 
             if (saved) {
                 formData = JSON.parse(saved);
+                console.log('Initial load - formData:', formData);
                 askReuseProfile();
             } else {
                 stepModeSelect();
