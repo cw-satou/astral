@@ -181,11 +181,7 @@
 </head>
 <body>
     <div class="container">
-        <div class="chat-box" id="chatBox">
-            <div class="msg bot">
-                こんにちは ✨ あなたにぴったりのブレスレットを作るために、いくつか質問させてください。
-            </div>
-        </div>
+        <div class="chat-box" id="chatBox"></div>
         <div class="input-area" id="inputArea"></div>
     </div>
 
@@ -194,6 +190,20 @@
         let userState = 'gender';
         let formData = {};
         let divinationResult = null;
+
+        // ===== あいさつメッセージ =====
+        function getGreetingMessage() {
+            const hour = new Date().getHours();
+            if (hour >= 5 && hour < 11) {
+                return "おはようございます。Astral Compass - 星の羅針盤です。あなたの悩みや不安、そして叶えたい夢を聞かせてください。ぴったりの石の魔法で、今日一日が軽やかになるように導きます。まず、あなたについて少し教えてくださいね。";
+            } else if (hour >= 11 && hour < 17) {
+                return "こんにちは。Astral Compass - 星の羅針盤です。ふと立ち止まりたくなる時や、これから踏み出したい一歩がある時に、この場所があなたのコンパスになります。あなたの悩みや不安、夢を聞いて、ぴったりの石の魔法でそっと背中を押します。いくつか、あなたのことを教えてください。";
+            } else if (hour >= 17 && hour < 22) {
+                return "こんばんは。Astral Compass - 星の羅針盤です。一日の終わりに、心の中を静かに整えてみませんか。抱えている悩みや不安、そして密かに温めている夢を聞いて、あなたに合う石の魔法で優しく導きます。まずは、あなたについていくつかお伺いします。";
+            } else {
+                return "遅くまでおつかれさまです。Astral Compass - 星の羅針盤です。夜だからこそ顔を出す想いや不安を、ここでそっと打ち明けてください。あなたの心に寄り添う石の魔法を選んで、静かな夜の中で進む方向を一緒に見つけていきます。いくつか、あなたについて教えてください。";
+            }
+        }
 
         // ===== ユーティリティ =====
         function addMsg(text, isUser = false) {
@@ -308,7 +318,7 @@
             `);
         }
 
-        // ===== ステップ: 占い実行 =====
+        // ===== 占い実行 =====
         async function executeDiagnose() {
             const date = document.getElementById('birthDate')?.value;
             const time = document.getElementById('birthTime')?.value || '';
@@ -355,11 +365,10 @@
             }
         }
 
-        // ===== 占い結果表示（文字数2倍） =====
+        // ===== 占い結果表示 =====
         function displayDivinationResult(result) {
             clearInputArea();
 
-            // 運命の地図
             if (result.destiny_map) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
@@ -395,7 +404,6 @@
                 document.getElementById('chatBox').appendChild(section);
             }
 
-            // オラクルカード
             if (result.oracle_card) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
@@ -409,16 +417,13 @@
                 document.getElementById('chatBox').appendChild(section);
             }
 
-            // 石候補表示
             if (result.stones_for_user && result.stones_for_user.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
                 let html = `<h3>💎 あなたにマッチする石はこれです</h3>`;
-                
                 if (result.stones_image_url) {
                     html += `<img src="${result.stones_image_url}" class="result-image" onerror="this.style.display='none'">`;
                 }
-                
                 result.stones_for_user.forEach(stone => {
                     html += `
                         <div class="stone-item">
@@ -427,12 +432,10 @@
                         </div>
                     `;
                 });
-                
                 section.innerHTML = html;
                 document.getElementById('chatBox').appendChild(section);
             }
 
-            // ブレスレット提案文
             if (result.bracelet_proposal) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
@@ -448,7 +451,7 @@
             `);
         }
 
-        // ===== ステップ: ブレスレットサイズ＋デザイン選択 =====
+        // ===== ブレスレットサイズ＋デザイン選択 =====
         function stepBraceletSize() {
             addMsg('ブレスレットのサイズとデザインを選んでください。', false);
 
@@ -486,7 +489,7 @@
             el.classList.add('active');
         }
 
-        // ===== ブレスレット完成 =====
+        // ===== ブレスレット生成 =====
         async function buildBracelet() {
             const wrist = parseFloat(document.getElementById('wristInner')?.value || 15.0);
             const beadSize = parseInt(document.getElementById('beadSize')?.value || 8);
@@ -530,24 +533,23 @@
             }
         }
 
-        // ===== ブレスレット結果表示（3段落＋小見出し） =====
+        // ===== ブレスレット結果表示 =====
         function displayBraceletResult(data) {
             clearInputArea();
 
             const section = document.createElement('div');
             section.className = 'result-section';
             let html = `<h3>💎 あなたを導くブレスレットはこれです</h3>`;
-            
+
             if (divinationResult.stones_image_url) {
                 html += `<img src="${divinationResult.stones_image_url}" class="result-image" onerror="this.style.display='none'">`;
             }
-            
+
             html += `<p>${data.design_text || 'デザイン情報がありません'}</p>`;
-            
+
             section.innerHTML = html;
             document.getElementById('chatBox').appendChild(section);
 
-            // オーダー情報
             if (data.order_summary) {
                 const orderSection = document.createElement('div');
                 orderSection.className = 'result-section';
@@ -557,17 +559,126 @@
 
             document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
 
+            // プロフィール保存（次回用）
+            const savedProfile = {
+                gender: formData.gender,
+                birth: formData.birth
+            };
+            localStorage.setItem('hoshin-proifle', JSON.stringify(savedProfile));
+
             setInputArea(`
                 <button class="btn" onclick="confirmOrder()">📱 LINEでオーダーする</button>
                 <button class="btn btn-secondary" onclick="location.reload()">🔄 最初から始める</button>
             `);
         }
 
-        // ===== オーダー確認 =====
+        // ===== オーダー確認（ダミー） =====
         function confirmOrder() {
             addMsg('ありがとうございます！オーダー情報を送信しました。', false);
             clearInputArea();
             addMsg('メールで確認が来ます。お待ちください ✨', false);
+        }
+
+        // ===== プロフィール再利用 =====
+        function askReuseProfile() {
+            const birth = formData.birth || {};
+            const summary = [
+                `性別：${formData.gender || '未設定'}`,
+                `生年月日：${birth.date || '未設定'}`,
+                `出生地：${birth.place || '未設定'}`
+            ].join('\n');
+
+            addMsg('前回のプロフィール情報を見つけました。', false);
+            addMsg(summary, false);
+
+            setInputArea(`
+                <button class="btn" onclick="reuseProfile()">この情報を使う</button>
+                <button class="btn btn-secondary" onclick="resetProfile()">修正してから占う</button>
+            `);
+        }
+
+        function reuseProfile() {
+            stepConcernsOnly();
+        }
+
+        function resetProfile() {
+            formData = {};
+            document.getElementById('chatBox').innerHTML = `<div class="msg bot">${getGreetingMessage()}</div>`;
+            stepGender();
+        }
+
+        // ===== 2回目以降: 悩みだけ聞くフロー =====
+        function stepConcernsOnly() {
+            userState = 'concerns_only';
+            formData.concerns = [];
+            addMsg('今回は、今の悩みだけを教えてください。', false);
+            setInputArea(`
+                <div class="btn-group">
+                    <button class="btn-toggle" onclick="toggleConcern(this, '恋愛')">💕 恋愛</button>
+                    <button class="btn-toggle" onclick="toggleConcern(this, '仕事')">💼 仕事</button>
+                    <button class="btn-toggle" onclick="toggleConcern(this, '金運')">💰 金運</button>
+                    <button class="btn-toggle" onclick="toggleConcern(this, '健康')">🌿 健康</button>
+                    <button class="btn-toggle" onclick="toggleConcern(this, '人間関係')">🤝 人間関係</button>
+                    <button class="btn-toggle" onclick="toggleConcern(this, 'その他')">✨ その他</button>
+                </div>
+                <button class="btn" onclick="stepProblemOnly()">次へ</button>
+            `);
+        }
+
+        function stepProblemOnly() {
+            if (!formData.concerns || formData.concerns.length === 0) {
+                addMsg('少なくとも1つ選んでください', false);
+                return;
+            }
+            addMsg(formData.concerns.join('、'), true);
+            addMsg('具体的にどんなことでお悩みですか？（記述式）', false);
+
+            userState = 'problem_only';
+            setInputArea(`
+                <div class="input-field">
+                    <textarea id="problemText" placeholder="例：最近彼との関係がうまくいかなくて..."></textarea>
+                </div>
+                <button class="btn" onclick="executeDiagnoseWithSavedProfile()">占い開始</button>
+            `);
+        }
+
+        async function executeDiagnoseWithSavedProfile() {
+            const problem = document.getElementById('problemText')?.value || '';
+            formData.problem = problem;
+            addMsg(problem || '（記述なし）', true);
+            addMsg('前回のプロフィール情報を使って占いを行います。', false);
+
+            setInputArea(`
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>星の配置を読み解いています... 🌌</p>
+                </div>
+            `);
+
+            try {
+                const res = await fetch(`${API_BASE}/diagnose`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const json = await res.json();
+
+                if (json.error) {
+                    addMsg(`エラーが発生しました: ${json.error}`, false);
+                    clearInputArea();
+                    return;
+                }
+
+                divinationResult = json.result;
+                window.diagnosisId = json.diagnosis_id;
+
+                displayDivinationResult(json.result);
+
+            } catch (err) {
+                addMsg('通信エラーが発生しました', false);
+                clearInputArea();
+            }
         }
 
         // ===== ナビゲーション =====
@@ -578,9 +689,18 @@
             else if (userState === 'birth') executeDiagnose();
         }
 
-        // 初期表示
+        // ===== 初期表示 =====
         window.onload = function() {
-            stepGender();
+            const saved = localStorage.getItem('hoshin-proifle');
+            const box = document.getElementById('chatBox');
+            box.innerHTML = `<div class="msg bot">${getGreetingMessage()}</div>`;
+
+            if (saved) {
+                formData = JSON.parse(saved);
+                askReuseProfile();
+            } else {
+                stepGender();
+            }
         };
     </script>
 </body>
