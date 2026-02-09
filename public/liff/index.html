@@ -251,8 +251,18 @@
             
             // 次のステップへ進むボタン
             setInputArea(`
-                <button class="btn" onclick="stepGender()">進める</button>
+                <button class="btn" onclick="stepGenderOrConcerns()">進める</button>
             `);
+        }
+
+        // ===== ステップ: 性別または悩み（前回情報に応じて分岐） =====
+        function stepGenderOrConcerns() {
+            // 前回情報があれば悩み選択へ、なければ性別選択へ
+            if (formData.gender) {
+                stepConcerns();
+            } else {
+                stepGender();
+            }
         }
 
         // ===== 石選択フロー =====
@@ -333,6 +343,7 @@
         // ===== ステップ: 性別 =====
         function stepGender() {
             userState = 'gender';
+            addMsg('性別を教えてください。', false);
             setInputArea(`
                 <div class="btn-group">
                     <button class="btn-toggle active" onclick="selectGender('女性', this)">女性</button>
@@ -349,10 +360,38 @@
             el.classList.add('active');
         }
 
+        // ===== ステップ: 性別確認（2回目以降） =====
+        function askGenderConfirm() {
+            const gender = formData.gender;
+            addMsg('性別について', false);
+            addMsg(gender, false);
+            addMsg('この情報を使いますか、それとも修正しますか？', false);
+
+            setInputArea(`
+                <button class="btn" onclick="useSavedGender()">この情報を使う</button>
+                <button class="btn btn-secondary" onclick="modifyGender()">修正する</button>
+            `);
+        }
+
+        function useSavedGender() {
+            addMsg('わかりました。この情報で進めます。', true);
+            stepConcerns();
+        }
+
+        function modifyGender() {
+            addMsg('修正します', true);
+            stepGender();
+        }
+
         // ===== ステップ: 悩みカテゴリ =====
         function stepConcerns() {
             if (!formData.gender) return;
-            addMsg(formData.gender, true);
+            
+            // 最初の訪問でなければ、前回の性別を表示
+            if (userState !== 'gender') {
+                addMsg(formData.gender, true);
+            }
+            
             addMsg('気になっていることはありますか？（複数選択可）', false);
 
             userState = 'concerns';
