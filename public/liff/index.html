@@ -100,6 +100,7 @@
             font-size: 14px;
             cursor: pointer;
             font-weight: bold;
+            margin-bottom: 8px;
         }
         .btn:disabled {
             opacity: 0.5;
@@ -110,7 +111,7 @@
         }
         .btn-secondary {
             background: #ccc;
-            margin-top: 8px;
+            margin-bottom: 0;
         }
         .btn-secondary:hover {
             background: #aaa;
@@ -138,6 +139,7 @@
             width: 100%;
             border-radius: 8px;
             margin: 10px 0;
+            display: none;
         }
         .stone-item {
             background: white;
@@ -403,21 +405,66 @@
             const problem = document.getElementById('problemText')?.value || '';
             formData.problem = problem;
             addMsg(problem || '（記述なし）', true);
+
+            // 前回の生年月日情報をチェック
+            const savedBirth = formData.birth;
+            if (savedBirth && savedBirth.date) {
+                askBirthInfoConfirm();
+            } else {
+                showBirthForm();
+            }
+        }
+
+        // ===== 生年月日情報の確認（2回目以降） =====
+        function askBirthInfoConfirm() {
+            const birth = formData.birth || {};
+            const summary = [
+                `生年月日：${birth.date || '未設定'}`,
+                `出生時間：${birth.time || '未設定'}`,
+                `出生地：${birth.place || '未設定'}`
+            ].join('\n');
+
+            addMsg('西洋占星術に必要な情報', false);
+            addMsg(summary, false);
+            addMsg('この情報を使いますか、それとも修正しますか？', false);
+
+            setInputArea(`
+                <button class="btn" onclick="useSavedBirth()">この情報を使う</button>
+                <button class="btn btn-secondary" onclick="modifyBirth()">修正する</button>
+            `);
+        }
+
+        function useSavedBirth() {
+            addMsg('わかりました。この情報で占いを進めます。', true);
+            executeDiagnose();
+        }
+
+        function modifyBirth() {
+            addMsg('修正します', true);
+            showBirthForm();
+        }
+
+        function showBirthForm() {
             addMsg('西洋占星術に必要な情報をお聞きします。', false);
+
+            const birth = formData.birth || {};
+            const savedDate = birth.date || '';
+            const savedTime = birth.time || '';
+            const savedPlace = birth.place || '';
 
             userState = 'birth';
             setInputArea(`
                 <div class="input-field">
                     <label>生年月日 *</label>
-                    <input type="date" id="birthDate" required>
+                    <input type="date" id="birthDate" value="${savedDate}" required>
                 </div>
                 <div class="input-field">
                     <label>出生時間</label>
-                    <input type="time" id="birthTime">
+                    <input type="time" id="birthTime" value="${savedTime}">
                 </div>
                 <div class="input-field">
                     <label>出生地</label>
-                    <input type="text" id="birthPlace" placeholder="例：札幌市">
+                    <input type="text" id="birthPlace" placeholder="例：札幌市" value="${savedPlace}">
                 </div>
                 <button class="btn" onclick="nextStep()">占い開始</button>
             `);
@@ -516,10 +563,11 @@
                 const section = document.createElement('div');
                 section.className = 'result-section';
                 let html = `<h3>オラクルカード</h3><p>${result.oracle_card.name}</p>`;
-                if (result.oracle_card.image_url) {
-                    const transform = result.oracle_card.is_upright ? '' : 'transform: scaleY(-1);';
-                    html += `<img src="${result.oracle_card.image_url}" class="result-image" style="${transform}" onerror="this.style.display='none'">`;
-                }
+                // 【コメント】オラクルカード画像表示（一旦コメントアウト）
+                // if (result.oracle_card.image_url) {
+                //     const transform = result.oracle_card.is_upright ? '' : 'transform: scaleY(-1);';
+                //     html += `<img src="${result.oracle_card.image_url}" class="result-image" style="${transform}" onerror="this.style.display='none'">`;
+                // }
                 html += `<p>${formatText(cleanText(result.oracle_message || result.oracle_card.meaning))}</p>`;
                 section.innerHTML = html;
                 document.getElementById('chatBox').appendChild(section);
@@ -537,9 +585,10 @@
                 const section = document.createElement('div');
                 section.className = 'result-section';
                 let html = `<h3>💎 あなたにマッチする石はこれです</h3>`;
-                if (result.stones_image_url) {
-                    html += `<img src="${result.stones_image_url}" class="result-image" onerror="this.style.display='none'">`;
-                }
+                // 【コメント】石候補の画像表示（一旦コメントアウト）
+                // if (result.stones_image_url) {
+                //     html += `<img src="${result.stones_image_url}" class="result-image" onerror="this.style.display='none'">`;
+                // }
                 result.stones_for_user.forEach(stone => {
                     html += `
                         <div class="stone-item">
@@ -625,7 +674,7 @@
 
         function selectDesign(style, el) {
             formData.design_style = style;
-            document.querySelectorAll('.input-field:last-child .btn-toggle').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.input-field:last-child .btn-group .btn-toggle').forEach(b => b.classList.remove('active'));
             el.classList.add('active');
         }
 
@@ -684,9 +733,10 @@
             section.className = 'result-section';
             let html = `<h3>💎 あなたを導くブレスレットはこれです</h3>`;
 
-            if (divinationResult.stones_image_url) {
-                html += `<img src="${divinationResult.stones_image_url}" class="result-image" onerror="this.style.display='none'">`;
-            }
+            // 【コメント】ブレスレット完成画像表示（一旦コメントアウト）
+            // if (divinationResult.stones_image_url) {
+            //     html += `<img src="${divinationResult.stones_image_url}" class="result-image" onerror="this.style.display='none'">`;
+            // }
 
             html += `<p>${formatText(data.design_text || 'デザイン情報がありません')}</p>`;
 
@@ -702,7 +752,7 @@
 
             document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
 
-            // プロフィール＋サイズ保存
+            // プロフィール＋サイズ＋生年月日情報を保存
             const savedProfile = {
                 gender: formData.gender,
                 birth: formData.birth,
