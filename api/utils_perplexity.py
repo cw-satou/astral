@@ -157,6 +157,7 @@ def generate_bracelet_reading(user_input: dict) -> dict:
     # 2. AI鑑定実行
     system_msg = SYSTEM_PROMPT
     user_msg = create_user_prompt(user_input, oracle_result)
+    print("RAW RESPONSE:", system_msg, user_msg)
 
     try:
         resp = client.chat.completions.create(
@@ -168,8 +169,10 @@ def generate_bracelet_reading(user_input: dict) -> dict:
             temperature=0.7,
             max_tokens=2000
         )
+        print("RAW RESPONSE:", resp)
 
         content = resp.choices[0].message.content
+        print("RAW RESPONSE:", content)
 
         # JSONクリーニング
         if "```json" in content:
@@ -179,6 +182,7 @@ def generate_bracelet_reading(user_input: dict) -> dict:
 
         # 引用表記削除
         content = re.sub(r'\[\d+\]', '', content)
+        print("RAW RESPONSE:", content)
 
         result = json.loads(content)
 
