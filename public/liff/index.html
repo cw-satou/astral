@@ -47,6 +47,8 @@
         .input-area {
             padding: 16px;
             border-top: 1px solid #ddd;
+            max-height: 350px;
+            overflow-y: auto;
         }
         .input-field {
             margin-bottom: 12px;
@@ -251,18 +253,93 @@
             
             // 次のステップへ進むボタン
             setInputArea(`
-                <button class="btn" onclick="stepGenderOrConcerns()">進める</button>
+                <button class="btn" onclick="stepAstrologicalInfo()">進める</button>
             `);
         }
 
-        // ===== ステップ: 性別または悩み（前回情報に応じて分岐） =====
-        function stepGenderOrConcerns() {
-            // 前回情報があれば悩み選択へ、なければ性別選択へ
-            if (formData.gender) {
-                stepConcerns();
+        // ===== ステップ: 占いに必要な情報（性別、生年月日、出生時間、出生地） =====
+        function stepAstrologicalInfo() {
+            addMsg('進める', true);
+            
+            // 保存済み情報があるか確認
+            const hasSavedInfo = formData.gender && formData.birth && formData.birth.date;
+            
+            if (hasSavedInfo) {
+                askAstrologicalInfoConfirm();
             } else {
-                stepGender();
+                showAstrologicalInfoForm();
             }
+        }
+
+        // ===== 占い情報確認（2回目以降） =====
+        function askAstrologicalInfoConfirm() {
+            const birth = formData.birth || {};
+            const summary = [
+                `性別：${formData.gender || '未設定'}`,
+                `生年月日：${birth.date || '未設定'}`,
+                `出生時間：${birth.time || '未設定'}`,
+                `出生地：${birth.place || '未設定'}`
+            ].join('\n');
+
+            addMsg('占いに必要な情報', false);
+            addMsg(summary, false);
+            addMsg('この情報を使いますか、それとも修正しますか？', false);
+
+            setInputArea(`
+                <button class="btn" onclick="continueWithSavedInfo()">この情報を使う</button>
+                <button class="btn btn-secondary" onclick="modifyAstrologicalInfo()">修正する</button>
+            `);
+        }
+
+        function continueWithSavedInfo() {
+            addMsg('わかりました。この情報で進めます。', true);
+            stepConcerns();
+        }
+
+        function modifyAstrologicalInfo() {
+            addMsg('修正します', true);
+            showAstrologicalInfoForm();
+        }
+
+        function showAstrologicalInfoForm() {
+            addMsg('占いに必要な情報をお聞きします。', false);
+
+            const gender = formData.gender || '';
+            const birth = formData.birth || {};
+            const savedDate = birth.date || '';
+            const savedTime = birth.time || '';
+            const savedPlace = birth.place || '';
+
+            userState = 'astrological_info';
+            setInputArea(`
+                <div class="input-field">
+                    <label>性別 *</label>
+                    <div class="btn-group">
+                        <button class="btn-toggle ${gender === '女性' ? 'active' : ''}" onclick="selectGender('女性', this)">女性</button>
+                        <button class="btn-toggle ${gender === '男性' ? 'active' : ''}" onclick="selectGender('男性', this)">男性</button>
+                        <button class="btn-toggle ${gender === 'その他' ? 'active' : ''}" onclick="selectGender('その他', this)">その他</button>
+                    </div>
+                </div>
+                <div class="input-field">
+                    <label>生年月日 *</label>
+                    <input type="date" id="birthDate" value="${savedDate}" required>
+                </div>
+                <div class="input-field">
+                    <label>出生時間</label>
+                    <input type="time" id="birthTime" value="${savedTime}">
+                </div>
+                <div class="input-field">
+                    <label>出生地</label>
+                    <input type="text" id="birthPlace" placeholder="例：札幌市" value="${savedPlace}">
+                </div>
+                <button class="btn" onclick="nextStep()">次へ</button>
+            `);
+        }
+
+        function selectGender(gender, el) {
+            formData.gender = gender;
+            document.querySelectorAll('.input-field:first-child .btn-toggle').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
         }
 
         // ===== 石選択フロー =====
@@ -340,58 +417,8 @@
             stepOrderChoice();
         }
 
-        // ===== ステップ: 性別 =====
-        function stepGender() {
-            userState = 'gender';
-            addMsg('性別を教えてください。', false);
-            setInputArea(`
-                <div class="btn-group">
-                    <button class="btn-toggle active" onclick="selectGender('女性', this)">女性</button>
-                    <button class="btn-toggle" onclick="selectGender('男性', this)">男性</button>
-                    <button class="btn-toggle" onclick="selectGender('その他', this)">その他</button>
-                </div>
-                <button class="btn" onclick="nextStep()">次へ</button>
-            `);
-        }
-
-        function selectGender(gender, el) {
-            formData.gender = gender;
-            document.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-        }
-
-        // ===== ステップ: 性別確認（2回目以降） =====
-        function askGenderConfirm() {
-            const gender = formData.gender;
-            addMsg('性別について', false);
-            addMsg(gender, false);
-            addMsg('この情報を使いますか、それとも修正しますか？', false);
-
-            setInputArea(`
-                <button class="btn" onclick="useSavedGender()">この情報を使う</button>
-                <button class="btn btn-secondary" onclick="modifyGender()">修正する</button>
-            `);
-        }
-
-        function useSavedGender() {
-            addMsg('わかりました。この情報で進めます。', true);
-            stepConcerns();
-        }
-
-        function modifyGender() {
-            addMsg('修正します', true);
-            stepGender();
-        }
-
         // ===== ステップ: 悩みカテゴリ =====
         function stepConcerns() {
-            if (!formData.gender) return;
-            
-            // 最初の訪問でなければ、前回の性別を表示
-            if (userState !== 'gender') {
-                addMsg(formData.gender, true);
-            }
-            
             addMsg('気になっていることはありますか？（複数選択可）', false);
 
             userState = 'concerns';
@@ -439,91 +466,23 @@
             `);
         }
 
-        // ===== ステップ: 生年月日 =====
-        function stepBirth() {
+        // ===== 占い実行 =====
+        async function executeDiagnose() {
             const problem = document.getElementById('problemText')?.value || '';
             formData.problem = problem;
             addMsg(problem || '（記述なし）', true);
 
-            // 前回の生年月日情報をチェック（formDataに既に入っているはず）
-            const savedBirth = formData.birth;
-            console.log('Current formData.birth:', savedBirth);
-            
-            if (savedBirth && savedBirth.date) {
-                askBirthInfoConfirm();
-            } else {
-                showBirthForm();
-            }
-        }
-
-        // ===== 生年月日情報の確認（2回目以降） =====
-        function askBirthInfoConfirm() {
-            const birth = formData.birth || {};
-            const summary = [
-                `生年月日：${birth.date || '未設定'}`,
-                `出生時間：${birth.time || '未設定'}`,
-                `出生地：${birth.place || '未設定'}`
-            ].join('\n');
-
-            addMsg('西洋占星術に必要な情報', false);
-            addMsg(summary, false);
-            addMsg('この情報を使いますか、それとも修正しますか？', false);
-
-            setInputArea(`
-                <button class="btn" onclick="useSavedBirth()">この情報を使う</button>
-                <button class="btn btn-secondary" onclick="modifyBirth()">修正する</button>
-            `);
-        }
-
-        function useSavedBirth() {
-            addMsg('わかりました。この情報で占いを進めます。', true);
-            executeDiagnose();
-        }
-
-        function modifyBirth() {
-            addMsg('修正します', true);
-            showBirthForm();
-        }
-
-        function showBirthForm() {
-            addMsg('西洋占星術に必要な情報をお聞きします。', false);
-
-            const birth = formData.birth || {};
-            const savedDate = birth.date || '';
-            const savedTime = birth.time || '';
-            const savedPlace = birth.place || '';
-
-            userState = 'birth';
-            setInputArea(`
-                <div class="input-field">
-                    <label>生年月日 *</label>
-                    <input type="date" id="birthDate" value="${savedDate}" required>
-                </div>
-                <div class="input-field">
-                    <label>出生時間</label>
-                    <input type="time" id="birthTime" value="${savedTime}">
-                </div>
-                <div class="input-field">
-                    <label>出生地</label>
-                    <input type="text" id="birthPlace" placeholder="例：札幌市" value="${savedPlace}">
-                </div>
-                <button class="btn" onclick="nextStep()">占い開始</button>
-            `);
-        }
-
-        // ===== 占い実行 =====
-        async function executeDiagnose() {
-            const date = document.getElementById('birthDate')?.value;
-            const time = document.getElementById('birthTime')?.value || '';
-            const place = document.getElementById('birthPlace')?.value || '';
+            // 占いに必要な情報を取得
+            const date = formData.birth?.date;
+            const time = formData.birth?.time || '';
+            const place = formData.birth?.place || '';
 
             if (!date) {
                 addMsg('生年月日は必須です', false);
                 return;
             }
 
-            formData.birth = { date, time, place };
-            console.log('Saving birth info:', formData.birth);
+            console.log('Executing diagnose with formData:', formData);
             addMsg(`${date} (${time || '時間不明'}) 出生地:${place || '不明'}`, true);
 
             setInputArea(`
@@ -869,10 +828,26 @@
 
         // ===== ナビゲーション =====
         function nextStep() {
-            if (userState === 'gender') stepConcerns();
-            else if (userState === 'concerns') stepProblem();
-            else if (userState === 'problem') stepBirth();
-            else if (userState === 'birth') executeDiagnose();
+            if (userState === 'astrological_info') {
+                // 占い情報フォームから送信
+                const date = document.getElementById('birthDate')?.value;
+                const time = document.getElementById('birthTime')?.value || '';
+                const place = document.getElementById('birthPlace')?.value || '';
+
+                if (!formData.gender) {
+                    addMsg('性別を選んでください', false);
+                    return;
+                }
+                if (!date) {
+                    addMsg('生年月日は必須です', false);
+                    return;
+                }
+
+                formData.birth = { date, time, place };
+                console.log('Saved astrological info:', formData.birth);
+                stepConcerns();
+            } else if (userState === 'concerns') stepProblem();
+            else if (userState === 'problem') executeDiagnose();
         }
 
         // ===== 初期表示 =====
