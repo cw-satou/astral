@@ -1,18 +1,49 @@
-# api/index.py
-from flask import Flask, request, jsonify, abort
-from api.diagnose import diagnose  # 診断処理をインポート
-from api.line_webhook import callback # Webhook処理をインポート
+from flask import Flask, request, jsonify
+import os
 
-app = Flask(__name__)
+# ルーティングのインポート
+from api.diagnose import diagnose, confirm_order
 
-# ルーティングをここでまとめて定義する
-# （元々のファイルから @app.route を剥がしてここに集約するイメージですが、
-#  一番簡単なのは、元の関数をそのまま route に登録することです）
+app = Flask(__name__, static_folder='public', static_url_path='')
 
-app.add_url_rule('/api/diagnose', view_func=diagnose, methods=['POST'])
-app.add_url_rule('/api/line_webhook', view_func=callback, methods=['POST'])
+# ===== ルーティング =====
 
-# 動作確認用（ブラウザで /api/test にアクセスすると動いているかわかる）
-@app.route('/api/test')
-def test():
-    return "API is working!"
+@app.route('/api/diagnose', methods=['POST'])
+def route_diagnose():
+    """占い処理エンドポイント"""
+    return diagnose()
+
+
+@app.route('/api/confirm-order', methods=['POST'])
+def route_confirm_order():
+    """オーダー確認エンドポイント"""
+    return confirm_order()
+
+
+@app.route('/api/health', methods=['GET'])
+def health():
+    """ヘルスチェック"""
+    return jsonify({"status": "ok", "service": "星の羅針盤 API"})
+
+
+@app.route('/')
+def index():
+    """フロントエンド提供"""
+    return app.send_static_file('index.html')
+
+
+# ===== エラーハンドラー =====
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Not found"}), 404
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({"error": "Internal server error"}), 500
+
+
+if __name__ == '__main__':
+    # ローカル開発用
+    app.run(debug=True, port=5000)
