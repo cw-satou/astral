@@ -236,11 +236,21 @@
             selectedMode = mode;
             if (mode === 'divination') {
                 addMsg('石の魔法の導きを得る', true);
-                stepGender();
+                stepDivinationIntro();
             } else {
                 addMsg('好みの石から魔法を得る', true);
                 stepStoneSelectMethod();
             }
+        }
+
+        // ===== ステップ: 占いモード導入メッセージ =====
+        function stepDivinationIntro() {
+            addMsg('あなたについて、悩みや夢を教えてください。その情報から、あなたにぴったりの石の魔法を導き出します。', false);
+            
+            // 次のステップへ進むボタン
+            setInputArea(`
+                <button class="btn" onclick="stepGender()">進める</button>
+            `);
         }
 
         // ===== 石選択フロー =====
