@@ -1,50 +1,4 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Astral Compass - 星の羅針盤</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Helvetica Neue', 'Hiragino Sans', 'Arial', sans-serif;
-            background: #f5f3f9;
-            color: #333;
-        }
-        .container {
-            max-width: 420px;
-            margin: 0 auto;
-            background: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        .chat-box {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .msg {
-            padding: 12px 16px;
-            border-radius: 12px;
-            max-width: 85%;
-            line-height: 1.6;
-            font-size: 14px;
-        }
-        .msg.bot {
-            align-self: flex-start;
-            background: #e8dff5;
-            color: #333;
-        }
-        .msg.user {
-            align-self: flex-end;
-            background: #8b6cc7;
-            color: white;
-        }
-        .input-area {
+   .input-area {
             padding: 16px;
             border-top: 1px solid #ddd;
         }
@@ -315,7 +269,7 @@
                 ]
             };
             
-            stepBraceletSize();
+            stepOrderChoice();
         }
 
         // ===== ステップ: 性別 =====
@@ -515,6 +469,14 @@
                 document.getElementById('chatBox').appendChild(section);
             }
 
+            // 【新】石のサポートメッセージを表示（「あなたにマッチする石はこれです」の前）
+            if (result.stone_support_message) {
+                const section = document.createElement('div');
+                section.className = 'result-section';
+                section.innerHTML = `<h3>あなたへのメッセージ</h3><p>${formatText(cleanText(result.stone_support_message))}</p>`;
+                document.getElementById('chatBox').appendChild(section);
+            }
+
             if (result.stones_for_user && result.stones_for_user.length > 0) {
                 const section = document.createElement('div');
                 section.className = 'result-section';
@@ -543,10 +505,31 @@
 
             document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
 
+            stepOrderChoice();
+        }
+
+        // ===== ステップ: オーダータイプ選択（オーダーメイド vs ネットショップ） =====
+        function stepOrderChoice() {
+            addMsg('この石をどのように手に入れますか？', false);
             setInputArea(`
-                <button class="btn" onclick="stepBraceletSize()">💍 ブレスレット設定へ進む</button>
-                <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
+                <button class="btn" onclick="selectOrderType('custom')">🎨 オーダーメイド（カスタマイズ）</button>
+                <button class="btn btn-secondary" onclick="selectOrderType('shop')">🛍️ ネットショップから選ぶ</button>
             `);
+        }
+
+        function selectOrderType(type) {
+            if (type === 'custom') {
+                addMsg('オーダーメイド（カスタマイズ）', true);
+                stepBraceletSize();
+            } else {
+                addMsg('ネットショップから選ぶ', true);
+                // TODO: ネットショップへのリダイレクトやリンク表示
+                addMsg('ネットショップへのリンクを準備中です。しばらくお待ちください。', false);
+                clearInputArea();
+                setInputArea(`
+                    <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 最初に戻る</button>
+                `);
+            }
         }
 
         // ===== ブレスレットサイズ＋デザイン選択 =====
@@ -572,11 +555,11 @@
                     </select>
                 </div>
                 <div class="input-field">
-                    <label>デザインスタイル</label>
+                    <label>ブレスレットのタイプ</label>
                     <div class="btn-group">
                         <button class="btn-toggle active" onclick="selectDesign('おまかせ', this)">おまかせ</button>
-                        <button class="btn-toggle" onclick="selectDesign('単色（シンプル）', this)">単色</button>
-                        <button class="btn-toggle" onclick="selectDesign('２色（混合）', this)">２色</button>
+                        <button class="btn-toggle" onclick="selectDesign('単色（シンプル）', this)">一色</button>
+                        <button class="btn-toggle" onclick="selectDesign('２色（混合）', this)">二色</button>
                         <button class="btn-toggle" onclick="selectDesign('トップを入れる', this)">トップ</button>
                     </div>
                 </div>
@@ -599,7 +582,7 @@
             formData.wrist_inner_cm = wrist;
             formData.bead_size_mm = beadSize;
 
-            addMsg(`手首内径: ${wrist}cm / 石サイズ: ${beadSize}mm / デザイン: ${designStyle}`, true);
+            addMsg(`手首内径: ${wrist}cm / 石サイズ: ${beadSize}mm / タイプ: ${designStyle}`, true);
 
             setInputArea(`
                 <div class="loading">
@@ -721,88 +704,15 @@
         }
 
         function reuseProfile() {
-            selectedMode = 'divination';
-            stepConcernsOnly();
-        }
-
-        function resetProfile() {
-            formData = {};
-            document.getElementById('chatBox').innerHTML = `<div class="msg bot">${getGreetingMessage()}</div>`;
+            // この情報を使う → モード選択へ
             stepModeSelect();
         }
 
-        // ===== 2回目以降: 悩みだけ聞くフロー =====
-        function stepConcernsOnly() {
-            userState = 'concerns_only';
-            formData.concerns = [];
-            addMsg('今回は、今の悩みだけを教えてください。', false);
-            setInputArea(`
-                <div class="btn-group">
-                    <button class="btn-toggle" onclick="toggleConcern(this, '恋愛')">💕 恋愛</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '仕事')">💼 仕事</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '金運')">💰 金運</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '健康')">🌿 健康</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '人間関係')">🤝 人間関係</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, 'その他')">✨ その他</button>
-                </div>
-                <button class="btn" onclick="stepProblemOnly()">次へ</button>
-            `);
-        }
-
-        function stepProblemOnly() {
-            if (!formData.concerns || formData.concerns.length === 0) {
-                addMsg('少なくとも1つ選んでください', false);
-                return;
-            }
-            addMsg(formData.concerns.join('、'), true);
-            addMsg('具体的にどんなことでお悩みですか？（記述式）', false);
-
-            userState = 'problem_only';
-            setInputArea(`
-                <div class="input-field">
-                    <textarea id="problemText" placeholder="例：最近彼との関係がうまくいかなくて..."></textarea>
-                </div>
-                <button class="btn" onclick="executeDiagnoseWithSavedProfile()">占い開始</button>
-            `);
-        }
-
-        async function executeDiagnoseWithSavedProfile() {
-            const problem = document.getElementById('problemText')?.value || '';
-            formData.problem = problem;
-            addMsg(problem || '（記述なし）', true);
-            addMsg('前回のプロフィール情報を使って占いを行います。', false);
-
-            setInputArea(`
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>星の配置を読み解いています... 🌌</p>
-                </div>
-            `);
-
-            try {
-                const res = await fetch(`${API_BASE}/diagnose`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-
-                const json = await res.json();
-
-                if (json.error) {
-                    addMsg(`エラーが発生しました: ${json.error}`, false);
-                    clearInputArea();
-                    return;
-                }
-
-                divinationResult = json.result;
-                window.diagnosisId = json.diagnosis_id;
-
-                displayDivinationResult(json.result);
-
-            } catch (err) {
-                addMsg('通信エラーが発生しました', false);
-                clearInputArea();
-            }
+        function resetProfile() {
+            // 修正 → 最初からやり直し
+            formData = {};
+            document.getElementById('chatBox').innerHTML = `<div class="msg bot">${getGreetingMessage()}</div>`;
+            stepModeSelect();
         }
 
         // ===== ナビゲーション =====
