@@ -5,7 +5,7 @@ from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
     Configuration, ApiClient, MessagingApi,
-    ReplyMessageRequest, TextMessage
+    ReplyMessageRequest, TextMessage, FlexMessage
 )
 from linebot.v3.webhooks import (
     MessageEvent, TextMessageContent
@@ -40,20 +40,20 @@ def callback():
 def handle_message(event):
     user_text = event.message.text.strip()
 
-    # 診断IDっぽい文字列なら詳細取得
-    if len(user_text) >= 8:
+    with ApiClient(configuration) as api_client:
+        line_bot_api = MessagingApi(api_client)
 
-        try:
-            # 自分のAPIに問い合わせ
-            response = requests.post(
-                os.environ.get("API_BASE_URL") + "/api/fortune-detail",
-                json={"diagnosis_id": user_text}
-            )
+        if len(user_text) >= 8:
+            try:
+                response = requests.post(
+                    os.environ.get("API_BASE_URL") + "/api/fortune-detail",
+                    json={"diagnosis_id": user_text}
+                )
 
-            if response.status_code == 200:
-                data = response.json()
+                if response.status_code == 200:
+                    data = response.json()
 
-                reply_text = f"""
+                    reply_text = f"""
 【あなたの運命の地図】
 
 ■ 過去
@@ -65,42 +65,109 @@ def handle_message(event):
 ■ 未来
 {data.get('future')}
 
-■ エレメント診断
-{data.get('element_detail')}
-
-■ オラクルカード
-{data.get('oracle_name')}（{data.get('oracle_position')}）
-
 ━━━━━━━━━━
 
 あなたの背中を押して、ずっと寄り添う石は
 『{data.get('stone_name')}』です。
-
-▶ ブレスレットを見る
-{data.get('product_url')}
 """
 
-            else:
-                reply_text = "診断IDが見つかりませんでした。もう一度ご確認ください。"
+                    flex_content = build_product_flex(
+                        data.get("stone_name"),
+                        data.get("product_urls")
+                    )
 
-        except Exception as e:
-            reply_text = "詳細取得中にエラーが発生しました。"
+                    line_bot_api.reply_message(
+                        ReplyMessageRequest(
+                            replyToken=event.reply_token,
+                            messages=[
+                                TextMessage(text=reply_text),
+                                FlexMessage(
+                                    altText="あなたの羅針盤はこちらです",
+                                    contents=flex_content
+                                )
+                            ]
+                        )
+                    )
+                    return
 
-    else:
-        reply_text = """星の羅針盤へようこそ✨
+                else:
+                    reply_text = "診断IDが見つかりませんでした。"
 
-無料診断はこちらから行えます：
+            except Exception:
+                reply_text = "詳細取得中にエラーが発生しました。"
+
+        else:
+            reply_text = """星の羅針盤へようこそ✨
+
+無料診断はこちら：
 https://your-liff-url.com
+"""
 
-診断後に表示される「診断ID」を
-このトークに送ってください。
-詳細鑑定をお届けします。"""
-
-    with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
         line_bot_api.reply_message(
             ReplyMessageRequest(
                 replyToken=event.reply_token,
                 messages=[TextMessage(text=reply_text)]
             )
         )
+
+def build_product_flex(stone_name, product_urls):
+
+    def bubble(title, subtitle, url):
+        return {
+            "type": "bubble",
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": title,
+                        "weight": "bold",
+                        "size": "lg"
+                    },
+                    {
+                        "type": "text",
+                        "text": subtitle,
+                        "size": "sm",
+                        "color": "#888888",
+                        "wrap": True
+                    }
+                ]
+            },
+            "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "action": {
+                            "type": "uri",
+                            "label": "この羅針盤を迎える",
+                            "uri": url
+                        }
+                    }
+                ]
+            }
+        }
+
+    return {
+        "type": "carousel",
+        "contents": [
+            bubble(
+                f"{stone_name}（トップ）",
+                "最もエネルギーが集中する設計",
+                product_urls["top"]
+            ),
+            bubble(
+                f"{stone_name}（単色）",
+                "石の力をまっすぐ受け取る",
+                product_urls["single"]
+            ),
+            bubble(
+                f"{stone_name}（2色）",
+                "調和とバランスを整える設計",
+                product_urls["double"]
+            )
+        ]
+    }
