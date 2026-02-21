@@ -1,5 +1,6 @@
 import os
-from flask import Flask, request, abort
+import requests
+from flask import request, abort
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.messaging import (
@@ -10,22 +11,20 @@ from linebot.v3.webhooks import (
     MessageEvent, TextMessageContent
 )
 
-# Initialize LINE API
-# Ensure these environment variables are set in Vercel
 CHANNEL_ACCESS_TOKEN = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
 CHANNEL_SECRET = os.environ.get("LINE_CHANNEL_SECRET")
 
 configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-def callback():
-    # Get X-Line-Signature header value
-    signature = request.headers.get("X-Line-Signature", "")
 
-    # Get request body as text
+# ==========================
+# Webhookエントリ
+# ==========================
+def callback():
+    signature = request.headers.get("X-Line-Signature", "")
     body = request.get_data(as_text=True)
 
-    # Handle webhook body
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
@@ -33,14 +32,69 @@ def callback():
 
     return "OK"
 
+
+# ==========================
+# メッセージ受信処理
+# ==========================
 @handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
-    user_text = event.message.text
+    user_text = event.message.text.strip()
 
-    # Simple auto-reply logic
-    # In production, you might want to switch logic based on user state (e.g. "ordering", "chatting")
+    # 診断IDっぽい文字列なら詳細取得
+    if len(user_text) >= 8:
 
-    reply_text = "メッセージありがとうございます！\n無料診断は以下のリンクから行えます。\nhttps://your-liff-url.com"
+        try:
+            # 自分のAPIに問い合わせ
+            response = requests.post(
+                os.environ.get("API_BASE_URL") + "/api/fortune-detail",
+                json={"diagnosis_id": user_text}
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+
+                reply_text = f"""
+【あなたの運命の地図】
+
+■ 過去
+{data.get('past')}
+
+■ 現在
+{data.get('present')}
+
+■ 未来
+{data.get('future')}
+
+■ エレメント診断
+{data.get('element_detail')}
+
+■ オラクルカード
+{data.get('oracle_name')}（{data.get('oracle_position')}）
+
+━━━━━━━━━━
+
+あなたの背中を押して、ずっと寄り添う石は
+『{data.get('stone_name')}』です。
+
+▶ ブレスレットを見る
+{data.get('product_url')}
+"""
+
+            else:
+                reply_text = "診断IDが見つかりませんでした。もう一度ご確認ください。"
+
+        except Exception as e:
+            reply_text = "詳細取得中にエラーが発生しました。"
+
+    else:
+        reply_text = """星の羅針盤へようこそ✨
+
+無料診断はこちらから行えます：
+https://your-liff-url.com
+
+診断後に表示される「診断ID」を
+このトークに送ってください。
+詳細鑑定をお届けします。"""
 
     with ApiClient(configuration) as api_client:
         line_bot_api = MessagingApi(api_client)

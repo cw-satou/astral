@@ -1,7 +1,8 @@
 from flask import request, jsonify
 from api.utils_perplexity import generate_bracelet_reading
 from api.utils_order import build_order_summary
-from api.utils_sheet import save_to_sheet
+from utils_sheet import add_diagnosis
+from datetime import datetime
 import uuid
 import json
 import traceback
@@ -11,83 +12,104 @@ import time
 
 def diagnose():
     """
-    第1フェーズ：占い結果だけを返す（サイズは聞かない）
+    第1フェーズ：無料版（石の名前だけ返す）
     """
     start_time = time.time()
-    print("--- Diagnose Request Started (Phase 1: Divination Only) ---")
+    print("--- Diagnose Request Started (Phase 1: Free Version) ---")
     
     try:
-        # 1. リクエストボディの取得
         data = request.get_json(force=True, silent=True)
-        
         if not data:
-            try:
-                if request.data:
-                    data = json.loads(request.data.decode('utf-8'))
-                else:
-                    print("Error: Empty request body")
-                    return jsonify({"error": "Empty request body", "code": "EMPTY_BODY"}), 400
-            except Exception as e:
-                print(f"Error parsing raw data: {str(e)}")
-                return jsonify({"error": "Invalid JSON format", "detail": str(e), "code": "JSON_PARSE_ERROR"}), 400
-        
+            return jsonify({"error": "Empty request body"}), 400
+
         print(f"Received data: {data}")
-        
-        # 2. AIによる分析実行
-        print("Calling Perplexity API for divination...")
-        
-        try:
-            result = generate_bracelet_reading(data)
-        except Exception as ai_err:
-            print(f"AI Generation Error: {str(ai_err)}")
-            traceback.print_exc()
-            return jsonify({
-                "error": "AI Processing Error",
-                "message": str(ai_err),
-                "code": "AI_ERROR"
-            }), 500
-        
-        # AIがエラーを返した場合
-        if isinstance(result, dict) and "error" in result:
-            print(f"AI Returned Error: {result}")
-            return jsonify(result), 500
-        
-        print("AI Response Received.")
-        
-        # 3. 診断IDの生成
-        diagnosis_id = str(uuid.uuid4())[:8]
-        
-        # 4. この段階ではGoogle Sheetsに保存（ユーザー基本情報のみ）
-        try:
-            print("Saving to Google Sheets...")
-            save_to_sheet(data, result, diagnosis_id)
-            print("Saved to Sheet.")
-        except Exception as sheet_err:
-            print(f"Warning: Failed to save to sheet: {str(sheet_err)}")
-        
-        # 処理時間の計測ログ
-        elapsed_time = time.time() - start_time
-        print(f"Diagnose finished in {elapsed_time:.2f} seconds.")
-        
-        # 5. 成功レスポンス（占い結果＋石候補のみ）
-        response_data = {
-            "diagnosis_id": diagnosis_id,
-            "phase": "stones_only",
-            "result": result,
-            "input_data": data
+
+        # =============================
+        # 1. AI実行
+        # =============================
+        result = generate_bracelet_reading(data)
+
+        if not isinstance(result, dict):
+            return jsonify({"error": "Invalid AI response"}), 500
+
+        # =============================
+        # 2. 石を1種類に強制
+        # =============================
+        stones_for_user = result.get("stones_for_user", [])
+        if not stones_for_user:
+            return jsonify({"error": "No stone generated"}), 500
+
+        main_stone = stones_for_user[0]   # ← 必ず1つだけ使用
+        stone_name = main_stone.get("name", "不明")
+
+        # =============================
+        # 3. 商品スラッグ固定マッピング
+        # =============================
+        STONE_PRODUCT_MAP = {
+            "アメジスト": "top-amethyst",
+            "ローズクォーツ": "top-rose",
+            "シトリン": "top-citrine",
+            "ガーネット": "top-garnet",
+            "アクアマリン": "top-aquamarine",
+            "ムーンストーン": "top-moonstone",
+            "タイガーアイ": "top-tigereye",
+            "アベンチュリン": "top-aventurine",
+            "ラピスラズリ": "top-lapis",
+            "水晶": "top-crystal"
         }
-        
-        return jsonify(response_data)
-        
+
+        product_slug = STONE_PRODUCT_MAP.get(stone_name, "top-crystal")
+
+        # =============================
+        # 4. 診断ID生成
+        # =============================
+        diagnosis_id = str(uuid.uuid4())
+        created_at = datetime.utcnow().isoformat()
+
+        # =============================
+        # 5. full_result（Sheets保存用）
+        # =============================
+        full_result = {
+            "diagnosis_id": diagnosis_id,
+            "created_at": created_at,
+            "stone_name": stone_name,
+            "element_lack": result.get("element_lack", ""),
+            "horoscope_full": result.get("horoscope_full", ""),
+            "past": result.get("past", ""),
+            "present": result.get("present", ""),
+            "future": result.get("future", ""),
+            "element_detail": result.get("element_detail", ""),
+            "oracle_name": result.get("oracle_card", {}).get("name", ""),
+            "oracle_position": result.get("oracle_card", {}).get("position", ""),
+            "product_slug": product_slug
+        }
+
+        # =============================
+        # 6. Sheets保存
+        # =============================
+        try:
+            add_diagnosis(full_result)
+        except Exception as sheet_err:
+            print("Sheet save error:", sheet_err)
+
+        # =============================
+        # 7. 無料返却データ（短縮版）
+        # =============================
+        free_result = {
+            "diagnosis_id": diagnosis_id,
+            "stone_name": stone_name,
+            "short_message": f"今のあなたに必要なのは『{stone_name}』です。",
+            "cta": "詳しい鑑定結果を見るにはLINE登録へ"
+        }
+
+        elapsed_time = time.time() - start_time
+        print(f"Diagnose finished in {elapsed_time:.2f}s")
+
+        return jsonify(free_result)
+
     except Exception as e:
-        t, v, tb = sys.exc_info()
-        print(f"Critical Server Error: {str(e)}")
         traceback.print_exc()
-        return jsonify({
-            "error": "Internal Server Error",
-            "message": str(e),
-            "code": "CRITICAL_ERROR"
-        }), 500
+        return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
 
 
 def build_bracelet():

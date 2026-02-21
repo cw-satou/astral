@@ -13,9 +13,8 @@
         }
 
         body {
-            font-family: 'Helvetica Neue', 'Hiragino Sans', 'Arial', sans-serif;
-            background: #f5f3f9;
-            color: #333;
+            background: radial-gradient(circle at top, #1a1129, #0d0618);
+            color: #eee;
         }
 
         .container {
@@ -144,11 +143,8 @@
         }
 
         .result-section {
-            background: #f9f7fc;
-            border: 1px solid #e0d4f0;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 12px 0;
+            background: rgba(20, 10, 40, 0.7);
+            border: 1px solid #b48cff;
         }
 
         .result-section h3 {
@@ -587,105 +583,30 @@
         function displayDivinationResult(result) {
             clearInputArea();
 
-            const cleanText = (text) => text ? text.replace(/【.+?】/g, '') : '';
+            const stoneName = result.stone_name ||
+                (result.stones_for_user?.[0]?.name || "あなたの石");
 
-            if (result.destiny_map) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                section.innerHTML = `<h3>運命の地図</h3><p>${formatText(cleanText(result.destiny_map))}</p>`;
-                document.getElementById('chatBox').appendChild(section);
-            }
+            const section = document.createElement('div');
+            section.className = 'result-section';
+            section.innerHTML = `
+        <h3>あなたの羅針盤</h3>
+        <p>
+        今のあなたに必要なのは――<br><br>
+        <strong style="font-size:18px;">${stoneName}</strong>
+        </p>
+        <p style="margin-top:10px;">
+        あなたはもう、答えを知っています。
+        </p>
+    `;
+            document.getElementById('chatBox').appendChild(section);
 
-            if (result.past) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                section.innerHTML = `<h3>過去</h3><p>${formatText(cleanText(result.past))}</p>`;
-                document.getElementById('chatBox').appendChild(section);
-            }
+            addMsg("詳しい鑑定結果と、あなた専用のタロットカードを見るにはLINEへ進んでください。", false);
 
-            if (result.present) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                section.innerHTML = `<h3>現在</h3><p>${formatText(cleanText(result.present))}</p>`;
-                document.getElementById('chatBox').appendChild(section);
-            }
-
-            if (result.future) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                section.innerHTML = `<h3>未来</h3><p>${formatText(cleanText(result.future))}</p>`;
-                document.getElementById('chatBox').appendChild(section);
-            }
-
-            if (result.element_diagnosis) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                section.innerHTML = `<h3>エレメント診断</h3><p>${formatText(cleanText(result.element_diagnosis))}</p>`;
-                document.getElementById('chatBox').appendChild(section);
-            }
-
-            if (result.oracle_card) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                let html = `<h3>オラクルカード</h3><p>${result.oracle_card.name}</p>`;
-                html += `<p>${formatText(cleanText(result.oracle_message || result.oracle_card.meaning))}</p>`;
-                section.innerHTML = html;
-                document.getElementById('chatBox').appendChild(section);
-            }
-
-            if (result.stone_support_message) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                section.innerHTML = `<h3>あなたへのメッセージ</h3><p>${formatText(cleanText(result.stone_support_message))}</p>`;
-                document.getElementById('chatBox').appendChild(section);
-            }
-
-            if (result.stones_for_user && result.stones_for_user.length > 0) {
-                const matchingStones = result.stones_for_user.slice(0, 2);
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                let html = `<h3>💎 あなたにマッチする石はこれです</h3>`;
-                matchingStones.forEach(stone => {
-                    html += `
-                        <div class="stone-item">
-                            <div class="name">💎 ${stone.name}</div>
-                            <div class="reason">${stone.reason}</div>
-                        </div>
-                    `;
-                });
-                section.innerHTML = html;
-                document.getElementById('chatBox').appendChild(section);
-
-                if (result.stones_for_user.length > 2) {
-                    const supportStones = result.stones_for_user.slice(2);
-                    const supportSection = document.createElement('div');
-                    supportSection.className = 'result-section';
-                    let supportHtml = `<h3>💎 サポートする石はこれです</h3>`;
-                    supportStones.forEach(stone => {
-                        supportHtml += `
-                            <div class="stone-item">
-                                <div class="name">💎 ${stone.name}</div>
-                                <div class="reason">${stone.reason}</div>
-                            </div>
-                        `;
-                    });
-                    supportSection.innerHTML = supportHtml;
-                    document.getElementById('chatBox').appendChild(supportSection);
-                }
-            }
-
-            if (result.bracelet_proposal) {
-                const section = document.createElement('div');
-                section.className = 'result-section';
-                section.innerHTML = `<h3>石の提案</h3><p>${formatText(cleanText(result.bracelet_proposal))}</p>`;
-                document.getElementById('chatBox').appendChild(section);
-            }
-
-            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
-
-            stepOrderChoice();
+            setInputArea(`
+        <button class="btn" onclick="goToLine()">📱 LINEで詳細を見る</button>
+        <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
+    `);
         }
-
         function stepOrderChoice() {
             addMsg('この石をどのように手に入れますか？', false);
             setInputArea(`
