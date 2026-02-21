@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from api.utils_perplexity import generate_bracelet_reading
 from api.utils_order import build_order_summary
-from utils_sheet import add_diagnosis
+from api.utils_sheet import add_diagnosis
 from datetime import datetime
 import uuid
 import json
