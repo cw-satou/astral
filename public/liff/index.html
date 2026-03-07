@@ -106,7 +106,7 @@
             box-shadow: none;
         }
 
-        /* 占いメッセージ */
+        /* 診断メッセージ */
         .msg.bot {
             background: white;
             color: #666;
@@ -357,7 +357,7 @@
 
 
         function formatText(text) {
-            return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            return text||'';
         }
         function setInputArea(html) {
             document.getElementById('inputArea').innerHTML = html;
@@ -373,7 +373,7 @@
             await addMsg('どちらの方法で石を選びますか？', false);
 
             setInputArea(`
-    <button class="btn" onclick="selectMode('divination')">✨ 石の魔法の導きを得る（占い）</button>
+    <button class="btn" onclick="selectMode('divination')">✨ 石の魔法の導きを得る（診断）</button>
     <button class="btn btn-secondary" onclick="selectMode('stone_select')">💎 好みの石から魔法を得る</button>
   `);
         }
@@ -416,7 +416,7 @@
             ].join('\n');
 
             const text = [
-                '占いに使うあなたのプロフィールです。',
+                '診断に使うあなたのプロフィールです。',
                 '',
                 summary,
                 '',
@@ -441,7 +441,7 @@
             showAstrologicalInfoForm();
         }
         function showAstrologicalInfoForm() {
-            addMsg('占いに必要な情報をお聞きします。', false);
+            addMsg('診断に必要な情報をお聞きします。', false);
             const gender = formData.gender || '';
             const birth = formData.birth || {};
             const savedDate = birth.date || '';
@@ -611,7 +611,7 @@
         <div class="input-field">
             <textarea id="problemText" placeholder="例：最近彼との関係がうまくいかなくて..."></textarea>
         </div>
-        <button class="btn" onclick="executeDiagnose()">占い開始</button>
+        <button class="btn" onclick="executeDiagnose()">診断開始</button>
     `);
         }
 
@@ -676,7 +676,7 @@
             clearInputArea();
             const nameForDisplay = getUserNameForDisplay();
             const stoneName = result.stone_name ||
-                (result.stones_for_user?.[0]?.name || `${nameForDisplay}さんの石`);
+                (result.stones_for_user?.[0]?.name || `あなたの石`);
 
             const chatBox = document.getElementById('chatBox');
 
@@ -685,49 +685,49 @@
                     key: 'destiny_map',
                     title: '運命の地図',
                     text: result.destiny_map,
-                    lead: 'まずは、今の${nameForDisplay}さん全体のテーマや流れを地図のように見ていきますね。'
+                    lead: `まずは、今のあなた全体のテーマや流れを地図のように見ていきますね。`
                 },
                 {
                     key: 'past',
                     title: 'これまでの流れ',
                     text: result.past,
-                    lead: '次に、これまでどんな資質や流れを持って歩いてきたのかを読み解いていきます。'
+                    lead: `次に、あなたがこれまでどんな資質や流れを持って歩いてきたのかを読み解いていきます。`
                 },
                 {
                     key: 'present',
                     title: '今のテーマ',
                     text: result.present,
-                    lead: 'ここからは、まさに「今」の${nameForDisplay}さんにフォーカスして、取り組むべきテーマを見てみましょう。'
+                    lead: `ここからは、まさに「今」のあなたにフォーカスして、取り組むべきテーマを見てみましょう。`
                 },
                 {
                     key: 'future',
                     title: 'これからの可能性',
                     text: result.future,
-                    lead: 'では、その先にどんな可能性やチャンスが開いていくのかをお伝えしますね。'
+                    lead: `では、その先にどんな可能性やチャンスが開いていくのかをお伝えしますね。`
                 },
                 {
                     key: 'element_diagnosis',
                     title: 'エレメントのバランス',
                     text: result.element_diagnosis,
-                    lead: '次は、火・地・風・水のバランスから、${nameForDisplay}さんのエネルギーの癖や不足しがちな部分を見ていきます。'
+                    lead: `次は、火・地・風・水のバランスから、あなたのエネルギーの癖や不足しがちな部分を見ていきます。`
                 },
                 {
                     key: 'oracle_message',
                     title: 'オラクルからのメッセージ',
                     text: result.oracle_message,
-                    lead: '引いたオラクルカードが、今の${nameForDisplay}さんにどんなことを伝えたがっているのかも整理していきます。'
+                    lead: `引いたオラクルカードが、今のあなたにどんなことを伝えたがっているのかも整理していきます。`
                 },
                 {
                     key: 'bracelet_proposal',
                     title: '石の選び方と意図',
                     text: result.bracelet_proposal,
-                    lead: 'ここからは、今回選ばれたメインの石に加えて、どんな石たちを組み合わせていくのか、その意図をお話ししていきますね。'
+                    lead: `ここからは、今回選ばれたメインの石に加えて、どんな石たちを組み合わせていくのか、その意図をお話ししていきますね。`
                 },
                 {
                     key: 'stone_support_message',
                     title: '石からのサポートメッセージ',
                     text: result.stone_support_message,
-                    lead: '最後に、「これらの石たちが今の${nameForDisplay}さんをどう支えてくれるのか」をまとめてお伝えします。'
+                    lead: `最後に、「これらの石たちが今のあなたをどう支えてくれるのか」をまとめてお伝えします。`
                 },
             ].filter(sec => sec.text);
 
@@ -760,9 +760,9 @@
                         [
                             "ここまで読んでくださってありがとうございます。",
                             "",
-                            "この結果を読むだけでも、石たちのエネルギーは少しずつ${nameForDisplay}さんに届き始めています。",
+                            "この結果を読むだけでも、石たちのエネルギーは少しずつあなたに届き始めています。",
                             "もし「実際に身につけてみたい」「お守りとしてそばに置いておきたい」と感じたら、",
-                            "今の${nameForDisplay}さんに合わせてブレスレットのかたちに整えることもできますよ。"
+                            "今のあなたに合わせてブレスレットのかたちに整えることもできますよ。"
                         ].join("\n"),
                         false
                     );
@@ -773,10 +773,10 @@
                             "実際に石を身につけると、ふと目に入るたびに「今日の自分の軸」を思い出しやすくなります。",
                             "",
                             "ここから先は、",
-                            "・今の${nameForDisplay}さんの手首サイズに合わせて",
+                            "・今のあなたの手首サイズに合わせて",
                             "・今回選ばれた石たちを中心に",
                             "・普段の服装やシーンにもなじむように",
-                            "${nameForDisplay}さんのブレスレットにデザインしていくステップです。"
+                            "あなたのブレスレットにデザインしていくステップです。"
                         ].join("\n"),
                         false
                     );
