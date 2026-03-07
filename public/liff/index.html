@@ -823,9 +823,18 @@
             }
 
             window.showNextSection = function () {
+                const isLast = (currentIndex === sections.length - 1);
+                const label = isLast
+                    ? '最後のメッセージまで読む'
+                    : '次のメッセージを読む';
+
+                // ★ ボタン押下をユーザーメッセージとして表示
+                addMsg(label, true);
+
                 currentIndex += 1;
                 showCurrentSection();
             };
+
 
             showCurrentSection();
         }
@@ -841,18 +850,22 @@
             `);
         }
         function selectOrderType(type) {
+            const label = type === 'custom'
+                ? 'オーダーメイドでお願いする'
+                : 'ショップで見る';
+            addMsg(label, true);     // ★ 追加
+
             if (type === 'custom') {
-                addMsg('オーダーメイド（カスタマイズ）', true);
                 stepBraceletSize();
             } else {
-                addMsg('ネットショップから選ぶ', true);
-                addMsg('ネットショップへのリンクを準備中です。しばらくお待ちください。', false);
+                addMsg('ショップで見る', false);
                 clearInputArea();
                 setInputArea(`
-                    <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 最初に戻る</button>
-                `);
+          <button class="btn btn-secondary" onclick="restartFromBeginning()">はじめからやり直す</button>
+        `);
             }
         }
+
         function stepBraceletSize() {
             addMsg(
                 "ブレスレットのサイズと、石の配置のイメージを決めていきましょう。普段の服装や、着けたいシーンをなんとなく思い浮かべながら選んでみてください。",
@@ -987,9 +1000,10 @@
         }
         function confirmOrder() {
             const diagnosisId = window.diagnosisId;
-            const wrist = formData.wristinnercm;
+            const wrist = formData.wrist_inner_cm;
             const problem = formData.problem || '';
             const oracleCard = divinationResult?.oraclecardname || '';
+            const name = getUserNameForDisplay();
 
             const lines = [
                 'この内容でブレスレットを注文したいです。',
@@ -1002,7 +1016,7 @@
             const text = lines.join('\n');
             const encoded = encodeURIComponent(text);
 
-            // ★ あとらすの公式アカウントIDに置き換えてね
+            // ここはあとらすの公式アカウントIDに差し替え
             window.location.href = `https://line.me/R/oaMessage/@586spjck/?${encoded}`;
         }
 
