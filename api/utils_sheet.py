@@ -1,19 +1,23 @@
 import os
 import json
 import gspread
-from google.oauth2.service_account import Credentials
 from oauth2client.service_account import ServiceAccountCredentials
 
-# 認証まわりは既存のをそのまま使ってOK
+# スコープはそのままでOK（必要に応じて調整）
 scope = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/drive",
 ]
-creds = ServiceAccountCredentials.from_json_keyfile_name(
-    "service_account.json", scope
+
+# ここを修正
+service_account_info = json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"])
+creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    service_account_info, scope
 )
-gc = gspread.authorize(creds)
+client = gspread.authorize(creds)
+
 
 PROFILE_SHEET_KEY = "スプレッドシートID_profiles"
 LOG_SHEET_KEY = "スプレッドシートID_logs"
