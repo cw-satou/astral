@@ -1293,6 +1293,14 @@
                 false
             );
 
+            // ★ 診断中の画面を表示
+            setInputArea(`
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>今日の運勢を読み解いています... 🔮</p>
+      </div>
+    `);
+
             try {
                 const res = await fetch('/api/today-fortune', {
                     method: 'POST',
@@ -1305,9 +1313,11 @@
                 const json = await res.json();
                 const text = json.message || '今日は、自分のペースを大切に過ごすと良さそうな日です。';
 
+                // ★ 診断完了したので入力エリアを一旦クリア
+                clearInputArea();
+
                 await addMsg(`【今日の運勢】\n${text}`, false);
 
-                // ★ ここから分岐メッセージ＋ボタン
                 await addMsg(
                     'この流れを踏まえて、あなたの導きの天然石を診断してみますか？',
                     false
@@ -1315,13 +1325,14 @@
 
                 setInputArea(`
           <button class="btn" onclick="startStoneDivination()">
-            💎 導きの天然石を診断
+            💎 導きの天然石を診断する
           </button>
           <button class="btn btn-secondary" onclick="restartFromBeginning()">
             🔄 最初に戻る
           </button>
         `);
             } catch (e) {
+                clearInputArea();
                 await addMsg(
                     'AIにうまくアクセスできませんでした。\n少し時間をおいてからもう一度お試しください。',
                     false
@@ -1331,6 +1342,7 @@
         `);
             }
         }
+
 
         function scrollChatToBottom() {
             const box = document.getElementById('chatBox');
