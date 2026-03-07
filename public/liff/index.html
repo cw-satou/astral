@@ -19,268 +19,262 @@
             box-sizing: border-box;
         }
 
-        body {
-            background: #FFF;
-            color: #666;
-            font-family: "Noto Sans JP", sans-serif;
-            min-height: 100vh;
+        @font-face {
+            font-family: 'FLOPDesignFont';
+            src: url('https://spicastar.info/fonts/FlopDesignFONT.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
         }
 
-        /* コンテナ */
-        .container {
-            max-width: 420px;
-            margin: auto;
-            background: #FFF;
-            backdrop-filter: blur(14px);
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            border-radius: 22px;
-            overflow: hidden;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+        @font-face {
+            font-family: 'HonokaShinMincho';
+            src: url('https://spicastar.info/fonts/HonokaShinMincho.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
         }
 
-        /* チャット */
-        .chat-box {
-            flex: 1;
-            padding: 24px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
+        body,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        div,
+        p,
+        ul,
+        li,
+        input,
+        button,
+        select,
+        option {
+            font-family: "HonokaShinMincho", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif !important;
 
-        /* メッセージ */
-        .msg {
-            position: relative;
-            padding: 16px 18px;
-            border-radius: 16px;
-            max-width: 85%;
-            line-height: 1.7;
-            font-size: 14px;
-            border: 1px solid #ddd;
-            background: #fff;
-        }
-
-        .msg::before {
-            content: "";
-            position: absolute;
-            left: -14px;
-            top: -14px;
-            width: 24px;
-            height: 24px;
-            background: black;
-            clip-path: polygon(50% 0%,
-                    61% 35%,
-                    98% 35%,
-                    68% 57%,
-                    79% 91%,
-                    50% 70%,
-                    21% 91%,
-                    32% 57%,
-                    2% 35%,
-                    39% 35%);
-            z-index: 2;
-            box-shadow:
-                0 0 6px rgba(238, 255, 0, 0.8),
-                0 0 16px rgba(238, 255, 0, 0.6),
-                0 0 30px rgba(238, 255, 0, 0.4);
-        }
-
-        /* 占いメッセージ */
-        .msg.bot {
-            background: white;
-            color: #666;
-            border-radius: 20px;
-            border: 1px solid #8f8f8f;
-            box-shadow:
-                0 0 6px rgba(#666, 0.8),
-                0 0 16px rgba(#666, 0.6),
-                0 0 30px rgba(#666, 0.4);
-        }
-
-        /* ユーザー */
-        .msg.user {
-            background: white;
-            color: #666;
-            border-radius: 20px;
-            align-self: flex-end;
-            border: 2px solid #63946e;
-            box-shadow:
-                0 0 6px rgba(#666, 0.8),
-                0 0 16px rgba(#666, 0.6),
-                0 0 30px rgba(#666, 0.4);
-        }
-
-        /* 入力エリア */
-        .input-area {
-            padding: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* 入力 */
-        .input-field {
-            margin-bottom: 12px;
-        }
-
-        .input-field label {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 4px;
-            display: block;
-        }
-
-        .input-field input,
-        .input-field textarea,
-        .input-field select {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            background: #fff;
-            border: 1px solid #ddd;
-            color: #555;
-        }
-
-        textarea {
-            resize: vertical;
-        }
-
-        /* ボタン */
-        .btn {
-            width: 100%;
-            padding: 13px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #6a5cff, #9f7bff);
-            color: white;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            cursor: pointer;
-            box-shadow: 0 0 12px rgba(120, 100, 255, 0.4);
-            margin-bottom: 8px;
-            transition: all .2s;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 0 20px rgba(120, 100, 255, 0.8);
-        }
-
-        .btn-secondary {
-            background: #444;
-        }
-
-        /* トグル */
-        .btn-toggle {
-            padding: 8px 14px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(30, 30, 60, 0.8);
-            color: #eee;
-            cursor: pointer;
-        }
-
-        .btn-toggle.active {
-            background: #7a5cff;
-            border-color: #7a5cff;
-        }
-
-        /* 結果カード */
-        .result-section {
-            background:
-                radial-gradient(circle at 20% 30%, rgba(120, 120, 255, 0.15) 1px, transparent 1px),
-                radial-gradient(circle at 70% 60%, rgba(120, 120, 255, 0.12) 1px, transparent 1px),
-                white;
-            background-size: 200px 200px;
-            border-radius: 20px;
-            box-shadow: 0 6px 22px rgba(0, 0, 0, 0.2);
-        }
-
-        /* タイトル */
-        .result-section h3 {
-            letter-spacing: 0.08em;
-            color: #bfaaff;
-            margin-bottom: 10px;
-        }
-
-        .result-section p {
-            font-size: 14px;
-            line-height: 1.8;
-            color: #ddd;
-        }
-
-        /* ローディング */
-        .loading {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-top-color: #9f7bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: auto;
-        }
-
-        .flatpickr-calendar {
-            background: #ffffff;
-            border-radius: 16px;
-            border: none;
-            border: 1px solid #ddd;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-            padding: 12px;
-            color: #666;
-        }
-
-        .flatpickr-day {
-            background: #ffffff;
-            border-radius: 16px;
-            border: none;
-            border: 1px solid #ddd;
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
-            padding: 12px;
-            color: #666;
-        }
-
-        .flatpickr-day.selected {
-            background: #7a6cff;
-            color: white;
-        }
-
-        .flatpickr-day.selected {
-            background: #6a5cff;
-        }
-
-        .flatpickr-day:hover {
-            background: #9f7bff;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg)
+            body {
+                background: #FFF;
+                color: #666;
+                min-height: 100vh;
             }
-        }
 
-        #starfield {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
+            /* コンテナ */
+            .container {
+                max-width: 420px;
+                margin: auto;
+                background: #013;
+                backdrop-filter: blur(14px);
+                border: 1px solid #e5e5e5;
+                border-radius: 20px;
+                box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+                border-radius: 22px;
+                overflow: hidden;
+            }
+
+            /* チャット */
+            .chat-box {
+                flex: 1;
+                padding: 24px;
+                overflow-y: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            /* メッセージ */
+            .msg {
+                position: relative;
+                padding: 18px 20px;
+                border-radius: 18px;
+                max-width: 85%;
+                line-height: 1.7;
+                font-size: 14px;
+                border: 1px solid #ddd;
+                background: #fff;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            }
+
+            /* 占いメッセージ */
+            .msg.bot {
+                background: white;
+                color: #666;
+                border-radius: 20px;
+                border: 1px solid #8f8f8f;
+            }
+
+            /* ユーザー */
+            .msg.user {
+                background: white;
+                color: #666;
+                border-radius: 20px;
+                align-self: flex-end;
+                border: 2px solid #63946e;
+            }
+
+            /* 入力エリア */
+            .input-area {
+                padding: 20px;
+                border-top: 1px solid rgba(255, 255, 255, 0.05);
+            }
+
+            /* 入力 */
+            .input-field {
+                margin-bottom: 12px;
+            }
+
+            .input-field label {
+                font-size: 12px;
+                color: #aaa;
+                margin-bottom: 4px;
+                display: block;
+            }
+
+            .input-field input,
+            .input-field textarea,
+            .input-field select {
+                width: 100%;
+                padding: 10px;
+                border-radius: 8px;
+                background: #fff;
+                border: 1px solid #ddd;
+                color: #555;
+            }
+
+            textarea {
+                resize: vertical;
+            }
+
+            /* メインボタン */
+            .btn {
+                width: 100%;
+                padding: 14px 16px;
+                border-radius: 12px;
+                background: #ffffff;
+                color: #555;
+                font-weight: 600;
+                letter-spacing: 0.03em;
+                cursor: pointer;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+                margin-bottom: 10px;
+                transition: all .15s ease;
+            }
+
+            /* hover */
+            .btn:hover {
+                background: #666;
+                color: #ccc;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+            }
+
+            /* サブボタン */
+            .btn-secondary {
+                background: #ffffff;
+                color: #666;
+            }
+
+            /* 選択チップ */
+            .btn-toggle {
+                padding: 8px 14px;
+                border-radius: 16px;
+                background: #ffffff;
+                color: #555;
+                font-size: 13px;
+                cursor: pointer;
+                transition: all .15s ease;
+                margin: 4px;
+            }
+
+            /* hover */
+            .btn-toggle:hover {
+                background: #ececec;
+            }
+
+            /* 選択状態 */
+            .btn-toggle.active {
+                background: #63946e;
+                border-color: #63946e;
+                color: #fff;
+                box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+            }
+
+            /* 結果カード */
+            .result-section {
+                background:
+                    radial-gradient(circle at 20% 30%, rgba(120, 120, 255, 0.15) 1px, transparent 1px),
+                    radial-gradient(circle at 70% 60%, rgba(120, 120, 255, 0.12) 1px, transparent 1px),
+                    white;
+                background-size: 200px 200px;
+                border-radius: 20px;
+                box-shadow: 0 6px 22px rgba(0, 0, 0, 0.2);
+            }
+
+            /* タイトル */
+            .result-section h3 {
+                letter-spacing: 0.08em;
+                color: #bfaaff;
+                margin-bottom: 10px;
+            }
+
+            .result-section p {
+                font-size: 14px;
+                line-height: 1.8;
+                color: #ddd;
+            }
+
+            /* ローディング */
+            .loading {
+                text-align: center;
+                padding: 40px;
+            }
+
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border: 3px solid rgba(255, 255, 255, 0.2);
+                border-top-color: #9f7bff;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin: auto;
+            }
+
+            .flatpickr-calendar {
+                background: #ffffff;
+                border-radius: 16px;
+                border: none;
+                border: 1px solid #ddd;
+                box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+                color: #666;
+            }
+
+            .flatpickr-day.selected {
+                background: #3b6892;
+                color: white;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg)
+                }
+            }
+
+            #starfield {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: -1;
+            }
     </style>
 </head>
 
 <body>
-    <canvas id="starfield"></canvas>
     <div class="container">
+        <canvas id="starfield"></canvas>
         <div class="chat-box" id="chatBox"></div>
         <div class="input-area" id="inputArea"></div>
     </div>
@@ -410,7 +404,6 @@
                 dateFormat: "Y-m-d",
                 maxDate: "today"
             });
-
             flatpickr("#birthTime", {
                 enableTime: true,
                 noCalendar: true,
@@ -827,7 +820,6 @@
         }
         animate();
     </script>
-
 </body>
 
 </html>
