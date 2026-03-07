@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
-    <title>Astral Compass - 星の羅針盤</title>
+    <title>星の羅針盤「あとらす」</title>
     <style>
         * {
             margin: 0;
@@ -303,13 +303,13 @@
         function getGreetingMessage() {
             const hour = new Date().getHours();
             if (hour >= 5 && hour < 11) {
-                return "おはようございます。Astral Compass - 星の羅針盤です。あなたの悩みや不安、そして叶えたい夢を聞かせてください。ぴったりの石の魔法で、今日一日が軽やかになるように導きます。まず、あなたについて少し教えてくださいね。";
+                return "おはようございます。星の羅針盤「あとらす」です。\n\n今の気分や、ちょっと気になっていることがあれば、ここで整理してみませんか？\nあなたのお話と星の流れをもとに、今のあなたに合いそうな石や過ごし方のヒントをお伝えします。";
             } else if (hour >= 11 && hour < 17) {
-                return "こんにちは。Astral Compass - 星の羅針盤です。ふと立ち止まりたくなる時や、これから踏み出したい一歩がある時に、この場所があなたのコンパスになります。あなたの悩みや不安、夢を聞いて、ぴったりの石の魔法でそっと背中を押します。いくつか、あなたのことを教えてください。";
+                return "こんにちは。星の羅針盤「あとらす」です。\n\n仕事や人間関係、これからのことなど、頭の中が少しごちゃごちゃしているときは、一度言葉にしてみるのがおすすめです。\nいま気になっていることを教えていただければ、星の配置とあわせて、落ち着いて考えるためのヒントをお出しします。";
             } else if (hour >= 17 && hour < 22) {
-                return "こんばんは。Astral Compass - 星の羅針盤です。一日の終わりに、心の中を静かに整えてみませんか。抱えている悩みや不安、そして密かに温めている夢を聞いて、あなたに合う石の魔法で優しく導きます。まずは、あなたについていくつかお伺いします。";
+                return "こんばんは。星の羅針盤「あとらす」です。\n\n一日の終わりに、心の中を少しだけ振り返ってみませんか。\nうまく言葉にならなくても大丈夫なので、気になっていることやモヤモヤしていることを、ここにそのまま書いてみてください。";
             } else {
-                return "遅くまでおつかれさまです。Astral Compass - 星の羅針盤です。夜だからこそ顔を出す想いや不安を、ここでそっと打ち明けてください。あなたの心に寄り添う石の魔法を選んで、静かな夜の中で進む方向を一緒に見つけていきます。いくつか、あなたについて教えてください。";
+                return "こんばんは。星の羅針盤「あとらす」です。\n\n一日の終わりに、心の中を少しだけ振り返ってみませんか。\nうまく言葉にならなくても大丈夫なので、気になっていることやモヤモヤしていることを、ここにそのまま書いてみてください。";
             }
         }
         function addMsg(text, isUser = false) {
@@ -376,11 +376,11 @@
         }
         function stepDivinationIntro() {
             const text = [
-                'あなたについて、悩みや夢を教えてください。',
-                'その情報から、あなたにぴったりの石の魔法を導き出します。'
-            ].join('\n\n');   // 1つのメッセージに結合
-
+                "まずは、今のあなたについて少しだけ教えてください。",
+                "はっきりした悩みがなくても大丈夫です。なんとなく気になっていることや、こうなれたらいいなと思うことがあれば、そのままの言葉で書いてください。",
+            ].join("\n\n");
             addMsg(text, false);
+
             showAstrologicalInfoForm();
         }
 
@@ -580,11 +580,11 @@
             addMsg(formData.concerns.join('、'), true);
 
             const text = [
-                '具体的にどんなことでお悩みですか？',
-                'できる範囲で大丈夫なので、今の状況や気持ちを書いてみてください。'
-            ].join('\n\n');
-
+                "具体的な状況やお気持ちを、書ける範囲で大丈夫なので教えてください。",
+                "うまくまとまっていなくても大丈夫です。「最近なんとなく気分が落ちやすい」「将来の方向性がぼんやりしている」など、一言でもかまいません。",
+            ].join("\n\n");
             addMsg(text, false);
+
 
             userState = 'problem';
             setInputArea(`
@@ -598,11 +598,13 @@
         async function executeDiagnose() {
             const problem = document.getElementById('problemText')?.value || '';
             formData.problem = problem;
-            if (!problem.trim()) {
-                addMsg('悩みを少し教えてください。', false);
-                return;
-            }
             const date = formData.birth?.date;
+            if (!problem) {
+                problem = "具体的なご相談内容は書かれていないため、今のあなた全体の流れや、これから大切にしたいテーマがわかるような全体運を中心に読み解いてください。";
+            }
+            formData.problem = problem;
+
+            formData.problem = problem;
             if (!date) {
                 addMsg('生年月日は必須です', false);
                 return;
@@ -657,7 +659,8 @@
             `);
         }
         function stepOrderChoice() {
-            addMsg('この石をどのように手に入れますか？', false);
+            addMsg("この石を身につけるとしたら、どのようなかたちが今のあなたにしっくりきそうか教えてください。", false);
+
             setInputArea(`
                 <button class="btn" onclick="selectOrderType('custom')">🎨 オーダーメイド（カスタマイズ）</button>
                 <button class="btn btn-secondary" onclick="selectOrderType('shop')">🛍️ ネットショップから選ぶ</button>
@@ -677,7 +680,8 @@
             }
         }
         function stepBraceletSize() {
-            addMsg('ブレスレットのサイズとデザインを選んでください。', false);
+            addMsg("ブレスレットのサイズや雰囲気を決めていきましょう。普段の服装や、着けたいシーンをなんとなく思い浮かべながら選んでみてください。", false);
+
             const savedWrist = formData.wrist_inner_cm || 15.0;
             const savedBead = formData.bead_size_mm || 8;
             setInputArea(`
@@ -809,8 +813,9 @@
                 `手首内径：${formData.wrist_inner_cm || 15.0}cm`,
                 `石サイズ：${formData.bead_size_mm || 8}mm`
             ].join('\n');
-            addMsg('前回のプロフィール情報を見つけました。', false);
+            addMsg("前回入力していただいたプロフィールが見つかりました。内容を確認して、気になる部分があれば修正してください。", false);
             addMsg(summary, false);
+
             setInputArea(`
                 <button class="btn" onclick="reuseProfile()">この情報を使う</button>
                 <button class="btn btn-secondary" onclick="resetProfile()">修正してから占う</button>
