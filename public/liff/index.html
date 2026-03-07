@@ -108,7 +108,7 @@
 
         /* 占いメッセージ */
         .msg.bot {
-            background: rgba(0, 80, 160, 0.2);
+            background: rgba(210, 221, 233, 0.75);
             color: #666;
             border-radius: 20px;
             border: 1px solid #8f8f8f;
@@ -119,7 +119,7 @@
 
         /* ユーザー */
         .msg.user {
-            background: rgba(0, 120, 60, 0.2);
+            background: rgba(182, 201, 191, 0.75);
             color: #666;
             border-radius: 20px;
             align-self: flex-end;
@@ -361,9 +361,15 @@
             }
         }
         function stepDivinationIntro() {
-            addMsg('あなたについて、悩みや夢を教えてください。その情報から、あなたにぴったりの石の魔法を導き出します。', false);
+            const text = [
+                'あなたについて、悩みや夢を教えてください。',
+                'その情報から、あなたにぴったりの石の魔法を導き出します。'
+            ].join('\n\n');   // 1つのメッセージに結合
+
+            addMsg(text, false);
             showAstrologicalInfoForm();
         }
+
         function stepAstrologicalInfo() {
             addMsg('進める', true);
             const hasSavedInfo = formData.gender && formData.birth && formData.birth.date;
@@ -381,14 +387,24 @@
                 `出生時間：${birth.time || '未設定'}`,
                 `出生地：${birth.place || '未設定'}`
             ].join('\n');
-            addMsg('占いに必要な情報', false);
-            addMsg(summary, false);
-            addMsg('この情報を使いますか、それとも修正しますか？', false);
+
+            const text = [
+                '占いに使うあなたのプロフィールです。',
+                '',
+                summary,
+                '',
+                'この情報を使いますか？ それとも修正しますか？'
+            ].join('\n');
+
+            addMsg(text, false);
+
             setInputArea(`
-                <button class="btn" onclick="continueWithSavedInfo()">この情報を使う</button>
-                <button class="btn btn-secondary" onclick="modifyAstrologicalInfo()">修正する</button>
-            `);
+        <button class="btn" onclick="continueWithSavedInfo()">この情報を使う</button>
+        <button class="btn btn-secondary" onclick="modifyAstrologicalInfo()">修正する</button>
+    `);
         }
+
+
         function continueWithSavedInfo() {
             addMsg('わかりました。この情報で進めます。', true);
             stepConcerns();
@@ -509,19 +525,25 @@
             stepOrderChoice();
         }
         function stepConcerns() {
-            addMsg('気になっていることはありますか？（複数選択可）', false);
+            const text = [
+                '今のあなたが特に気になっているテーマを教えてください。',
+                '複数選んでも大丈夫です。'
+            ].join('\n\n');
+
+            addMsg(text, false);
+
             userState = 'concerns';
             setInputArea(`
-                <div class="btn-group">
-                    <button class="btn-toggle" onclick="toggleConcern(this, '恋愛')">💕 恋愛</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '仕事')">💼 仕事</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '金運')">💰 金運</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '健康')">🌿 健康</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, '人間関係')">🤝 人間関係</button>
-                    <button class="btn-toggle" onclick="toggleConcern(this, 'その他')">✨ その他</button>
-                </div>
-                <button class="btn" onclick="nextStep()">次へ</button>
-            `);
+        <div class="btn-group">
+            <button class="btn-toggle" onclick="toggleConcern(this, '恋愛')">💕 恋愛</button>
+            <button class="btn-toggle" onclick="toggleConcern(this, '仕事')">💼 仕事</button>
+            <button class="btn-toggle" onclick="toggleConcern(this, '金運')">💰 金運</button>
+            <button class="btn-toggle" onclick="toggleConcern(this, '健康')">🌿 健康</button>
+            <button class="btn-toggle" onclick="toggleConcern(this, '人間関係')">🤝 人間関係</button>
+            <button class="btn-toggle" onclick="toggleConcern(this, 'その他')">✨ その他</button>
+        </div>
+        <button class="btn" onclick="nextStep()">次へ</button>
+    `);
         }
         function toggleConcern(el, concern) {
             formData.concerns = formData.concerns || [];
@@ -537,19 +559,28 @@
         }
         function stepProblem() {
             if (!formData.concerns || formData.concerns.length === 0) {
-                addMsg('少なくとも1つ選んでください', false);
+                addMsg('少なくとも1つ選んでください。', false);
                 return;
             }
+
             addMsg(formData.concerns.join('、'), true);
-            addMsg('具体的にどんなことでお悩みですか？（記述式）', false);
+
+            const text = [
+                '具体的にどんなことでお悩みですか？',
+                'できる範囲で大丈夫なので、今の状況や気持ちを書いてみてください。'
+            ].join('\n\n');
+
+            addMsg(text, false);
+
             userState = 'problem';
             setInputArea(`
-                <div class="input-field">
-                    <textarea id="problemText" placeholder="例：最近彼との関係がうまくいかなくて..."></textarea>
-                </div>
-                <button class="btn" onclick="executeDiagnose()">占い開始</button>
-            `);
+        <div class="input-field">
+            <textarea id="problemText" placeholder="例：最近彼との関係がうまくいかなくて..."></textarea>
+        </div>
+        <button class="btn" onclick="executeDiagnose()">占い開始</button>
+    `);
         }
+
         async function executeDiagnose() {
             const problem = document.getElementById('problemText')?.value || '';
             formData.problem = problem;
@@ -822,10 +853,12 @@
 
         window.onload = function () {
             const saved = localStorage.getItem('hoshin-profile');
-            const box = document.getElementById('chatBox');
 
-            box.innerHTML = '';                 // いったん空にする
-            addMsg(getGreetingMessage(), false); // ← これでタイプライター使用
+            const box = document.getElementById('chatBox');
+            box.innerHTML = '';                         // いったん空にする
+
+            // ここでタイプライター付き addMsg を使う
+            addMsg(getGreetingMessage(), false);
 
             if (saved) {
                 formData = JSON.parse(saved);
