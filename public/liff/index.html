@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500&display=swap" rel="stylesheet">
     <title>Astral Compass - 星の羅針盤</title>
     <style>
         * {
@@ -13,17 +14,26 @@
         }
 
         body {
-            background: radial-gradient(circle at top, #1a1129, #0d0618);
-            color: #eee;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(120, 90, 255, 0.15), transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(70, 140, 255, 0.15), transparent 40%),
+                linear-gradient(180deg, #070511 0%, #0d0b1f 50%, #04030a 100%);
+            color: #e9e9f5;
+            font-family: "Noto Sans JP", sans-serif;
         }
 
         .container {
             max-width: 420px;
             margin: 0 auto;
-            background: white;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            background: rgba(10, 10, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        h3 {
+            font-family: "Cinzel", serif;
+            letter-spacing: 0.08em;
         }
 
         .chat-box {
@@ -44,9 +54,11 @@
         }
 
         .msg.bot {
-            align-self: flex-start;
-            background: #e8dff5;
-            color: #333;
+            background: rgba(20, 20, 40, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(120, 100, 255, 0.4);
+            color: #e8e8ff;
+            box-shadow: 0 0 12px rgba(120, 100, 255, 0.3);
         }
 
         .msg.user {
@@ -112,16 +124,17 @@
         }
 
         .btn {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            background: #8b6cc7;
+            background: linear-gradient(135deg, #6a5cff, #9f7bff);
+            border: 1px solid rgba(200, 200, 255, 0.3);
             color: white;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-bottom: 8px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            box-shadow: 0 0 12px rgba(120, 100, 255, 0.5);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 0 20px rgba(120, 100, 255, 0.8);
         }
 
         .btn:disabled {
@@ -143,8 +156,13 @@
         }
 
         .result-section {
-            background: rgba(20, 10, 40, 0.7);
-            border: 1px solid #b48cff;
+            background: linear-gradient(180deg,
+                    rgba(20, 20, 40, 0.9),
+                    rgba(10, 10, 25, 0.9));
+            border: 1px solid rgba(140, 120, 255, 0.3);
+            border-radius: 12px;
+            padding: 18px;
+            box-shadow: 0 0 25px rgba(120, 100, 255, 0.2);
         }
 
         .result-section h3 {
