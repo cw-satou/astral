@@ -615,6 +615,10 @@
             if (!problem) {
                 problem = "具体的なご相談内容は書かれていないため、今のあなた全体の流れや、これから大切にしたいテーマがわかるような全体運を中心に読み解いてください。";
             }
+
+            // ① ユーザーの入力をそのままユーザー吹き出しで表示
+            addMsg(problem, true);
+
             formData.problem = problem;
 
             if (!date) {
@@ -622,15 +626,13 @@
                 return;
             }
 
-            // 悩みの確認＋診断開始メッセージ
+            // ② 悩みの確認＋診断開始メッセージ（bot側）
             const confirmText = [
-                "あなたの今のお悩みは、こんな感じですね。",
-                "",
-                `「${problem}」`,
-                "",
+                "あなたの今のお悩みはわかりました。ありがとうございます。",
                 "この内容で、星と石の流れを読み解いていきます。少しだけお待ちくださいね。"
             ].join("\n");
 
+            // ③ ローディング表示〜診断API呼び出しはそのまま
             await addMsg(confirmText, false);
 
             // ローディング表示
@@ -1031,7 +1033,16 @@
                 formData.birth = { date, time, place };
                 console.log('Saved astrological info:', formData.birth);
 
-                // 性別＋生年月日＋出生時間＋出生地 が揃った時点でまとめて保存
+                // ここでユーザー入力をチャットに一度出す
+                const summaryForUser = [
+                    `性別：${formData.gender}`,
+                    `生年月日：${date}`,
+                    `出生時間：${time || '未入力'}`,
+                    `出生地：${place || '未入力'}`
+                ].join('\n');
+
+                addMsg(summaryForUser, true);
+
                 saveProfileToLocalStorage();
 
                 stepConcerns();
