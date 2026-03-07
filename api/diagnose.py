@@ -60,14 +60,22 @@ def diagnose():
             "created_at": created_at,
             "stone_name": stone_name,
             "element_lack": element_lack,
-            "horoscope_full": result.get("horoscope_full", ""),
+
+            "destiny_map": result.get("destiny_map", ""),
             "past": result.get("past", ""),
             "present": result.get("present", ""),
             "future": result.get("future", ""),
-            "element_detail": result.get("element_detail", ""),
+            "element_diagnosis": result.get("element_diagnosis", ""),
+            "oracle_message": result.get("oracle_message", ""),
+            "bracelet_proposal": result.get("bracelet_proposal", ""),
+            "stone_support_message": result.get("stone_support_message", ""),
+
             "oracle_name": result.get("oracle_card", {}).get("name", ""),
-            "oracle_position": result.get("oracle_card", {}).get("position", ""),
-            "product_slug": "",  # 単一商品紐づけしたければここに入れる
+            "oracle_position": (
+                "正位置" if result.get("oracle_card", {}).get(
+                    "is_upright") else "逆位置"
+            ),
+            "product_slug": "",
         }
 
         try:
@@ -75,19 +83,29 @@ def diagnose():
         except Exception as sheet_err:
             print("Sheet save error:", sheet_err)
 
-        # 7. フロント向け返却
-        free_result = {
+
+        # 7. フロント向け返却（フル鑑定をそのまま渡す）
+        full_response = {
+            # まず Perplexity の結果を全部展開
+            **result,
+
+            # そこにメタ情報を上書き・追加
             "diagnosis_id": diagnosis_id,
             "element_lack": element_lack,
             "stone_name": stone_name,
-            "stones_for_user": stones_for_user,
-            "short_message": f"今のあなたに不足しているのは「{element_lack}」のエレメント。そのバランスを整える代表的な石が『{stone_name}』です。"
+
+            # short_message は、将来使いたくなった時用にここで決めてもOK
+            "short_message": result.get("short_message") or
+            f"今のあなたに不足しているのは「{element_lack}」のエレメント。そのバランスを整える代表的な石が『{stone_name}』です。",
+
+            # stones_for_user は、AI側が出してくれたものを優先
+            "stones_for_user": result.get("stones_for_user") or stones_for_user,
         }
 
         elapsed_time = time.time() - start_time
         print(f"Diagnose finished in {elapsed_time:.2f}s")
 
-        return jsonify(free_result)
+        return jsonify(full_response)
 
     except Exception as e:
         traceback.print_exc()
@@ -142,7 +160,7 @@ def build_bracelet():
         )
         stones = bracelet_design["stones"]
         design_text = bracelet_design["design_text"]
-    
+
         # 2. ブレスレットデザイン生成
         bracelet_design = build_bracelet_design(
             stones_for_user, wrist_inner_cm, bead_size_mm, design_style
@@ -180,6 +198,7 @@ def build_bracelet():
             "message": str(e),
             "code": "BRACELET_ERROR"
         }), 500
+
 
 def build_bracelet_design(
     stones_for_user: list,
@@ -270,6 +289,7 @@ def build_bracelet_design(
         "design_text": design_text,
         "sales_copy": f"あなたを導く {element_stone['name']} ブレスレット"
     }
+
 
 def generate_design_text_for_type(
     birth_stone: dict,
@@ -392,6 +412,7 @@ def generate_stone_summary(stones: list, wrist_inner_cm: float, bead_size_mm: in
     summary += f"\n■ ビーズ総数：{total_beads}個\n"
 
     return summary
+
 
 def get_birthstone_from_birth(birth: dict) -> dict:
     """

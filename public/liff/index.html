@@ -652,24 +652,63 @@
 
             const chatBox = document.getElementById('chatBox');
 
-            // 1. セクション定義
             const sections = [
-                { title: '運命の地図', text: result.destiny_map },
-                { title: 'これまでの流れ', text: result.past },
-                { title: '今のテーマ', text: result.present },
-                { title: 'これからの可能性', text: result.future },
-                { title: 'エレメントのバランス', text: result.element_diagnosis },
-                { title: 'オラクルからのメッセージ', text: result.oracle_message },
-                { title: '石の選び方と意図', text: result.bracelet_proposal },
-                { title: '石からのサポートメッセージ', text: result.stone_support_message },
-            ].filter(sec => sec.text); // 空は除外
+                {
+                    key: 'destiny_map',
+                    title: '運命の地図',
+                    text: result.destiny_map,
+                    lead: 'まずは、今のあなた全体のテーマや流れを地図のように見ていきますね。'
+                },
+                {
+                    key: 'past',
+                    title: 'これまでの流れ',
+                    text: result.past,
+                    lead: '次に、これまでどんな資質や流れを持って歩いてきたのかを読み解いていきます。'
+                },
+                {
+                    key: 'present',
+                    title: '今のテーマ',
+                    text: result.present,
+                    lead: 'ここからは、まさに「今」のあなたにフォーカスして、取り組むべきテーマを見てみましょう。'
+                },
+                {
+                    key: 'future',
+                    title: 'これからの可能性',
+                    text: result.future,
+                    lead: 'では、その先にどんな可能性やチャンスが開いていくのかをお伝えしますね。'
+                },
+                {
+                    key: 'element_diagnosis',
+                    title: 'エレメントのバランス',
+                    text: result.element_diagnosis,
+                    lead: '次は、火・地・風・水のバランスから、あなたのエネルギーの癖や不足しがちな部分を見ていきます。'
+                },
+                {
+                    key: 'oracle_message',
+                    title: 'オラクルからのメッセージ',
+                    text: result.oracle_message,
+                    lead: '引いたオラクルカードが、今のあなたにどんなことを伝えたがっているのかも整理していきます。'
+                },
+                {
+                    key: 'bracelet_proposal',
+                    title: '石の選び方と意図',
+                    text: result.bracelet_proposal,
+                    lead: 'ここからは、どんな意図で石を選び、どんな願いをサポートするのかを具体的にお話ししますね。'
+                },
+                {
+                    key: 'stone_support_message',
+                    title: '石からのサポートメッセージ',
+                    text: result.stone_support_message,
+                    lead: '最後に、「今のあなたにこの石がどんな魔法で寄り添うのか」をまとめてお伝えします。'
+                },
+            ].filter(sec => sec.text);
+
 
             let currentIndex = 0;
 
-            // result-section 用のタイプライター
             function typeIntoElement(element, rawText, speed = 20) {
                 return new Promise((resolve) => {
-                    const text = formatText(rawText); // **強調** を先にHTML化
+                    const text = formatText(rawText);
                     let i = 0;
                     element.innerHTML = '';
 
@@ -689,7 +728,7 @@
 
             async function showCurrentSection() {
                 if (currentIndex >= sections.length) {
-                    // 全セクション表示後：運命の石
+                    // ……ここは今の「運命の石」表示ロジックのままでOK……
                     const finalWrapper = document.createElement('div');
                     finalWrapper.className = 'msg bot';
                     finalWrapper.innerHTML = `
@@ -713,6 +752,10 @@
 
                 const sec = sections[currentIndex];
 
+                // ① つなぎの一言をチャットとしてタイプライター表示
+                await addMsg(sec.lead, false);
+
+                // ② カード本体をタイプライター表示
                 const wrapper = document.createElement('div');
                 wrapper.className = 'msg bot';
                 const inner = document.createElement('div');
@@ -729,10 +772,8 @@
                 chatBox.appendChild(wrapper);
                 scrollChatToBottom();
 
-                // 本文をタイプライター表示
                 await typeIntoElement(p, sec.text, 20);
 
-                // ボタン表示
                 const isLast = (currentIndex === sections.length - 1);
                 setInputArea(`
       <button class="btn" onclick="showNextSection()">
@@ -741,13 +782,11 @@
     `);
             }
 
-            // グローバルから呼ぶため
             window.showNextSection = function () {
                 currentIndex += 1;
                 showCurrentSection();
             };
 
-            // 最初の1枚
             showCurrentSection();
         }
 
