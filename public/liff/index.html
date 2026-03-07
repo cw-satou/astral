@@ -8,6 +8,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+JP:wght@400;500&display=swap"
         rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
     <title>Astral Compass - 星の羅針盤</title>
     <style>
         * {
@@ -59,6 +62,7 @@
             max-width: 85%;
             line-height: 1.7;
             font-size: 14px;
+            position: relative;
         }
 
         /* 占いメッセージ */
@@ -71,7 +75,9 @@
             background-size: 180px 180px;
             color: #000;
             border-radius: 20px;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+            box-shadow:
+                0 6px 18px rgba(0, 0, 0, 0.18),
+                0 0 10px rgba(120, 100, 255, 0.25);
         }
 
         /* ユーザー */
@@ -79,8 +85,10 @@
             background: linear-gradient(135deg, #6a5cff, #9f7bff);
             color: white;
             border-radius: 20px;
-            box-shadow: 0 6px 18px rgba(120, 100, 255, 0.4);
             align-self: flex-end;
+            box-shadow:
+                0 6px 18px rgba(0, 0, 0, 0.2),
+                0 0 16px rgba(140, 120, 255, 0.6);
         }
 
         /* 入力エリア */
@@ -169,7 +177,6 @@
 
         /* タイトル */
         .result-section h3 {
-            font-family: "Cinzel", serif;
             letter-spacing: 0.08em;
             color: #bfaaff;
             margin-bottom: 10px;
@@ -195,6 +202,19 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: auto;
+        }
+
+        .flatpickr-calendar {
+            background: #111028;
+            border: 1px solid #6a5cff;
+        }
+
+        .flatpickr-day.selected {
+            background: #6a5cff;
+        }
+
+        .flatpickr-day:hover {
+            background: #9f7bff;
         }
 
         @keyframes spin {
@@ -329,11 +349,11 @@
                 </div>
                 <div class="input-field">
                     <label>生年月日 *</label>
-                    <input type="date" id="birthDate" value="${savedDate}" required>
+                    <input type="text" id="birthDate" value="${savedDate}" required>
                 </div>
                 <div class="input-field">
                     <label>出生時間</label>
-                    <input type="time" id="birthTime" value="${savedTime}">
+                    <input type="text" id="birthTime" value="${savedTime}">
                 </div>
                 <div class="input-field">
                     <label>出生地</label>
@@ -711,6 +731,17 @@
                 stepModeSelect();
             }
         };
+        flatpickr("#birthDate", {
+            locale: "ja",
+            dateFormat: "Y-m-d",
+            maxDate: "today",
+        });
+        flatpickr("#birthTime", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true
+        });
     </script>
     <script>
         const canvas = document.getElementById("starfield");
@@ -751,6 +782,7 @@
         }
         animate();
     </script>
+
 </body>
 
 </html>
