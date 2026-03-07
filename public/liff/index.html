@@ -53,6 +53,15 @@
             font-family: "HonokaShinMincho", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif !important;
         }
 
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+
         body {
             background: #FFF;
             color: #666;
@@ -70,7 +79,7 @@
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            height: 100vh;
             border-radius: 22px;
             overflow: hidden;
         }
@@ -94,25 +103,30 @@
             line-height: 1.7;
             font-size: 14px;
             border: 1px solid #ddd;
-            background: #fff;
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
         }
 
         /* 占いメッセージ */
         .msg.bot {
-            background: white;
+            background: rgba(0, 80, 160, 0.2);
             color: #666;
             border-radius: 20px;
             border: 1px solid #8f8f8f;
+            box-shadow:
+                0 0 12px rgba(80, 150, 255, 0.35),
+                0 0 1px rgba(80, 150, 255, 0.8);
         }
 
         /* ユーザー */
         .msg.user {
-            background: white;
+            background: rgba(0, 120, 60, 0.2);
             color: #666;
             border-radius: 20px;
             align-self: flex-end;
             border: 2px solid #63946e;
+            box-shadow:
+                0 0 12px rgba(120, 220, 170, 0.4),
+                0 0 1px rgba(120, 220, 170, 0.9);
         }
 
         /* 入力エリア */
@@ -303,13 +317,14 @@
             div.className = `msg ${isUser ? 'user' : 'bot'}`;
             div.innerHTML = formatText(text);
             box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
+            scrollChatToBottom();
         }
         function formatText(text) {
             return text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         }
         function setInputArea(html) {
             document.getElementById('inputArea').innerHTML = html;
+            scrollChatToBottom();
         }
         function clearInputArea() {
             setInputArea('');
@@ -768,6 +783,11 @@
                 console.log('Saved astrological info:', formData.birth);
                 stepConcerns();
             } else if (userState === 'concerns') stepProblem();
+        }
+        function scrollChatToBottom() {
+            const box = document.getElementById('chatBox');
+            if (!box) return;
+            box.scrollTop = box.scrollHeight;
         }
         window.onload = function () {
             const saved = localStorage.getItem('hoshin-profile');
