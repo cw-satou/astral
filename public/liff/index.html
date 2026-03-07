@@ -408,44 +408,41 @@
             }
         }
 
-async function stepTodayFortune() {
-    const birth = formData.birth || {};
+        async function stepTodayFortune() {
+            const birth = formData.birth || {};
 
-    if (!birth.date) {
-        await addMsg(
-            '今日の運勢を読むために、生年月日・生まれた時間と場所を教えていただけますか？',
-            false
-        );
-        showAstrologicalInfoForm();
-        return;
-    }
+            await addMsg(
+                '今日の運勢を読むために、生年月日・生まれた時間と場所を教えていただけますか？',
+                false
+            );
+            showAstrologicalInfoForm();
 
-    await addMsg(
-        '生まれた時間と場所も含めて、AIに今日の運勢を聞いてみますね。',
-        false
-    );
+            await addMsg(
+                '生まれた時間と場所も含めて、AIに今日の運勢を聞いてみますね。',
+                false
+            );
 
-    try {
-        const res = await fetch('/api/today-fortune', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                gender: formData.gender,
-                birth: birth
-            })
-        });
-        const json = await res.json();
-        const text = json.message || '今日は、自分のペースを大切に過ごすと良さそうな日です。';
+            try {
+                const res = await fetch('/api/today-fortune', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gender: formData.gender,
+                        birth: birth
+                    })
+                });
+                const json = await res.json();
+                const text = json.message || '今日は、自分のペースを大切に過ごすと良さそうな日です。';
 
-        await addMsg(`【今日の運勢】\n${text}`, false);
+                await addMsg(`【今日の運勢】\n${text}`, false);
 
-        // ★ ここから追記：運勢を読んだ感想・状況を入力してもらう
-        await addMsg(
-            'この今日の運勢を読んで、\n今の気分や「ここが気になった」などがあれば、一言でいいので教えてもらえますか？',
-            false
-        );
+                // ★ ここから追記：運勢を読んだ感想・状況を入力してもらう
+                await addMsg(
+                    'この今日の運勢を読んで、\n今の気分や「ここが気になった」などがあれば、一言でいいので教えてもらえますか？',
+                    false
+                );
 
-        setInputArea(`
+                setInputArea(`
           <div class="input-field">
             <label>今の気分や、気になったポイントがあれば一言で</label>
             <textarea id="todayComment" rows="3" placeholder="例）最近ちょっと気持ちが落ち込み気味です"></textarea>
@@ -453,16 +450,16 @@ async function stepTodayFortune() {
           <button class="btn" onclick="submitTodayComment()">送信して、詳しく占ってもらう</button>
         `);
 
-    } catch (e) {
-        await addMsg(
-            'AIにうまくアクセスできませんでした。\n少し時間をおいてからもう一度お試しください。',
-            false
-        );
-        setInputArea(`
+            } catch (e) {
+                await addMsg(
+                    'AIにうまくアクセスできませんでした。\n少し時間をおいてからもう一度お試しください。',
+                    false
+                );
+                setInputArea(`
           <button class="btn" onclick="stepConcerns()">💬 テーマを決めて占う</button>
         `);
-    }
-}
+            }
+        }
 
 
         function submitTodayComment() {
