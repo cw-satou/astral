@@ -316,7 +316,7 @@
             const div = document.createElement('div');
             div.className = `msg ${isUser ? 'user' : 'bot'}`;
 
-            // ユーザーのメッセージは即表示
+            // ユーザーは今までどおり
             if (isUser) {
                 div.innerHTML = formatText(text);
                 box.appendChild(div);
@@ -324,11 +324,9 @@
                 return;
             }
 
-            // botメッセージはタイプライター表示
+            // bot はタイプライター
             box.appendChild(div);
-            const formatted = formatText(text);        // **〜** の太字変換は先にやる
-            const plain = formatted;                   // ここでそのまま使うならHTML込み
-
+            const plain = text;  // 太字マークアップは一旦使わない想定
             typeText(div, plain, 40, () => {
                 scrollChatToBottom();
             });
@@ -806,14 +804,13 @@
         }
         function typeText(element, text, speed = 40, callback) {
             let i = 0;
-            element.innerHTML = '';  // 最初は空にする
+            element.textContent = '';  // HTML扱いしない
 
             function type() {
                 if (i < text.length) {
-                    element.innerHTML += text[i];
+                    element.textContent += text[i];
                     i++;
-                    // 途中でスクロールも追従させる
-                    scrollChatToBottom && scrollChatToBottom();
+                    scrollChatToBottom();
                     setTimeout(type, speed);
                 } else if (typeof callback === 'function') {
                     callback();
@@ -822,10 +819,14 @@
             type();
         }
 
+
         window.onload = function () {
             const saved = localStorage.getItem('hoshin-profile');
             const box = document.getElementById('chatBox');
-            box.innerHTML = `<div class="msg bot">${getGreetingMessage()}</div>`;
+
+            box.innerHTML = '';                 // いったん空にする
+            addMsg(getGreetingMessage(), false); // ← これでタイプライター使用
+
             if (saved) {
                 formData = JSON.parse(saved);
                 console.log('Initial load - formData:', formData);
