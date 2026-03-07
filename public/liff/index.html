@@ -636,28 +636,59 @@
                 clearInputArea();
             }
         }
+
         function displayDivinationResult(result) {
             clearInputArea();
             const stoneName = result.stone_name ||
                 (result.stones_for_user?.[0]?.name || "あなたの石");
-            const section = document.createElement('div');
-            section.className = 'result-section';
-            section.innerHTML = `
-            <h3>あなたの羅針盤</h3>
-            <p>
-            今のあなたに必要なのは――<br><br>
-            <strong style="font-size:18px;">${stoneName}</strong>
-            </p>
-            <p style="margin-top:10px;">
-            あなたはもう、答えを知っています。
-            </p>
-            `;
-            document.getElementById('chatBox').appendChild(section);
+
+            const chatBox = document.getElementById('chatBox');
+
+            // 1. 運命の地図〜石の説明までをセクションごとに表示
+            function addSection(title, text) {
+                if (!text) return;
+                const sec = document.createElement('div');
+                sec.className = 'result-section';
+                sec.style.marginTop = '12px';
+                sec.innerHTML = `
+      <h3>${title}</h3>
+      <p>${formatText(text)}</p>
+    `;
+                chatBox.appendChild(sec);
+            }
+
+            addSection('運命の地図', result.destiny_map);
+            addSection('これまでの流れ', result.past);
+            addSection('今のテーマ', result.present);
+            addSection('これからの可能性', result.future);
+            addSection('エレメントのバランス', result.element_diagnosis);
+            addSection('オラクルからのメッセージ', result.oracle_message);
+            addSection('石の選び方と意図', result.bracelet_proposal);
+            addSection('石からのサポートメッセージ', result.stone_support_message);
+
+            // 2. 最後に「運命の石」をまとめて出すボックス
+            const finalSection = document.createElement('div');
+            finalSection.className = 'result-section';
+            finalSection.style.marginTop = '16px';
+            finalSection.innerHTML = `
+    <h3>あなたを導く運命の石</h3>
+    <p>
+      今のあなたを最も力強く導いてくれるのは――<br><br>
+      <strong style="font-size:18px;">${stoneName}</strong>
+    </p>
+  `;
+            chatBox.appendChild(finalSection);
+
+            scrollChatToBottom();
+
             setInputArea(`
-                <button class="btn" onclick="stepOrderChoice()">💎 ブレスレットを作る</button>
-                <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
-            `);
+    <button class="btn" onclick="stepOrderChoice()">💎 ブレスレットを作る</button>
+    <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
+  `);
         }
+
+
+
         function stepOrderChoice() {
             addMsg("この石を身につけるとしたら、どのようなかたちが今のあなたにしっくりきそうか教えてください。", false);
 
@@ -734,7 +765,7 @@
             formData.wrist_inner_cm = wrist;
 
             addMsg(`手首内径: ${wrist}cm / タイプ: ${designStyle}`, true);
-
+            saveProfileToLocalStorage()
             setInputArea(`
     <div class="loading">
       <div class="spinner"></div>
@@ -794,7 +825,6 @@
                 bead_size_mm: formData.bead_size_mm
             };
             console.log('Saving profile:', savedProfile);
-            localStorage.setItem('hoshin-profile', JSON.stringify(savedProfile));
             setInputArea(`
                 <button class="btn" onclick="confirmOrder()">📱 LINEでオーダーする</button>
                 <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
@@ -840,7 +870,17 @@
                 bracelet_type: formData.bracelet_type,
             };
             localStorage.setItem('hoshin-profile', JSON.stringify(profile));
+
+            if (userId) {
+                fetch('/api/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, ...profile }),
+                }).catch(() => { });
+            }
         }
+
+
         function nextStep() {
             if (userState === 'astrological_info') {
                 const date = document.getElementById('birthDate')?.value;
@@ -890,22 +930,84 @@
                 type();
             });
         }
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) {
+                return parts.pop().split(';').shift();
+            }
+            return null;
+        }
+
+        function setCookie(name, value, days = 365) {
+            const d = new Date();
+            d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+            const expires = "expires=" + d.toUTCString();
+            document.cookie = `${name}=${value};${expires};path=/`;
+        }
+
+        function generateUserId() {
+            // 簡易 UUID でOK（将来差し替え前提）
+            const s4 = () =>
+                Math.floor((1 + Math.random()) * 0x10000)
+                    .toString(16)
+                    .substring(1);
+            return (
+                s4() +
+                s4() +
+                "-" +
+                s4() +
+                "-" +
+                s4() +
+                "-" +
+                s4() +
+                "-" +
+                s4() +
+                s4() +
+                s4()
+            );
+        }
+
+        let userId = null;
 
         window.onload = async function () {
-            const saved = localStorage.getItem('hoshin-profile');
-            const box = document.getElementById('chatBox');
-
-            box.innerHTML = '';
-            await addMsg(getGreetingMessage(), false);  // 挨拶をタイプライター
-
-            if (saved) {
-                formData = JSON.parse(saved); // 前回プロフィールを復元
-                console.log('Initial load - formData:', formData);
+            // 1) userId を cookie から読み込み or 新規発行
+            userId = getCookie('hoshin_user_id');
+            if (userId) {
+                try {
+                    const res = await fetch(`/api/profile?user_id=${encodeURIComponent(userId)}`);
+                    if (res.ok) {
+                        const profile = await res.json();
+                        formData = { ...formData, ...profile };
+                    }
+                } catch (e) {
+                    console.log('profile load error', e);
+                }
             }
 
-            // saved の有無に関わらず普通にフロー開始
+
+            const box = document.getElementById('chatBox');
+            box.innerHTML = '';
+            await addMsg(getGreetingMessage(), false);
+
+            // 2) ここでサーバからプロフィール取得（あとでAPI実装）
+            // 例:
+            // const res = await fetch(`/api/profile?user_id=${encodeURIComponent(userId)}`);
+            // if (res.ok) {
+            //   const profile = await res.json();
+            //   formData = { ...formData, ...profile };
+            // }
+
+            // 3) ローカルのlocalStorageもあればマージ（任意）
+            const saved = localStorage.getItem('hoshin-profile');
+            if (saved) {
+                const localProfile = JSON.parse(saved);
+                formData = { ...localProfile, ...formData };
+            }
+
             stepModeSelect();
         };
+
 
     </script>
     <script>

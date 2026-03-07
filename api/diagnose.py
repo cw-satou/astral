@@ -3,6 +3,7 @@ from api.utils_perplexity import generate_bracelet_reading
 from api.utils_order import build_order_summary
 from api.utils_sheet import add_diagnosis
 from datetime import datetime
+from datetime import datetime
 import uuid
 import json
 import traceback
@@ -12,10 +13,10 @@ import time
 
 def diagnose():
     """
-    第1フェーズ：無料版（石の名前だけ返す）
+    第1フェーズ：不足エレメントと、そのエレメントを補う代表石1種類を返す
     """
     start_time = time.time()
-    print("--- Diagnose Request Started (Phase 1: Free Version) ---")
+    print("--- Diagnose Request Started (Phase 1: Element & Main Stone) ---")
 
     try:
         data = request.get_json(force=True, silent=True)
@@ -24,56 +25,41 @@ def diagnose():
 
         print(f"Received data: {data}")
 
-        # =============================
         # 1. AI実行
-        # =============================
         result = generate_bracelet_reading(data)
-
         if not isinstance(result, dict):
             return jsonify({"error": "Invalid AI response"}), 500
 
-        # =============================
-        # 2. 石を1種類に強制
-        # =============================
-        stones_for_user = result.get("stones_for_user", [])
-        if not stones_for_user:
-            return jsonify({"error": "No stone generated"}), 500
+        # 2. 不足エレメント
+        element_lack = result.get("element_lack", "")
 
-        main_stone = stones_for_user[0]   # ← 必ず1つだけ使用
-        stone_name = main_stone.get("name", "不明")
-
-        # =============================
-        # 3. 商品スラッグ固定マッピング
-        # =============================
-        STONE_PRODUCT_MAP = {
-            "アメジスト": "top-amethyst",
-            "ローズクォーツ": "top-rose",
-            "シトリン": "top-citrine",
-            "ガーネット": "top-garnet",
-            "アクアマリン": "top-aquamarine",
-            "ムーンストーン": "top-moonstone",
-            "タイガーアイ": "top-tigereye",
-            "アベンチュリン": "top-aventurine",
-            "ラピスラズリ": "top-lapis",
-            "水晶": "top-crystal"
+        # 3. エレメント→石マッピング（今は1:1、将来ここを増やす）
+        ELEMENT_STONE_MAP = {
+            "火": "ガーネット",
+            "地": "タイガーアイ",
+            "風": "ラピスラズリ",
+            "水": "アクアマリン",
+            # 例: 増やすときは "火": ["ガーネット","カーネリアン"] などにして分岐
         }
 
-        product_slug = STONE_PRODUCT_MAP.get(stone_name, "top-crystal")
+        stone_name = ELEMENT_STONE_MAP.get(element_lack, "水晶")
 
-        # =============================
-        # 4. 診断ID生成
-        # =============================
+        # 4. stones_for_user を「メイン石1つ」だけにしておく（将来は配列増やせる）
+        stones_for_user = [{
+            "name": stone_name,
+            "reason": f"不足している「{element_lack}」のエレメントを補い、あなたのバランスを整える石です。"
+        }]
+
+        # 5. 診断ID生成
         diagnosis_id = str(uuid.uuid4())
         created_at = datetime.utcnow().isoformat()
 
-        # =============================
-        # 5. full_result（Sheets保存用）
-        # =============================
+        # 6. Sheets保存用（ログ）
         full_result = {
             "diagnosis_id": diagnosis_id,
             "created_at": created_at,
             "stone_name": stone_name,
-            "element_lack": result.get("element_lack", ""),
+            "element_lack": element_lack,
             "horoscope_full": result.get("horoscope_full", ""),
             "past": result.get("past", ""),
             "present": result.get("present", ""),
@@ -81,25 +67,21 @@ def diagnose():
             "element_detail": result.get("element_detail", ""),
             "oracle_name": result.get("oracle_card", {}).get("name", ""),
             "oracle_position": result.get("oracle_card", {}).get("position", ""),
-            "product_slug": product_slug
+            "product_slug": "",  # 単一商品紐づけしたければここに入れる
         }
 
-        # =============================
-        # 6. Sheets保存
-        # =============================
         try:
             add_diagnosis(full_result)
         except Exception as sheet_err:
             print("Sheet save error:", sheet_err)
 
-        # =============================
-        # 7. 無料返却データ（短縮版）
-        # =============================
+        # 7. フロント向け返却
         free_result = {
             "diagnosis_id": diagnosis_id,
+            "element_lack": element_lack,
             "stone_name": stone_name,
-            "short_message": f"今のあなたに必要なのは『{stone_name}』です。",
-            "cta": "詳しい鑑定結果を見るにはLINE登録へ"
+            "stones_for_user": stones_for_user,
+            "short_message": f"今のあなたに不足しているのは「{element_lack}」のエレメント。そのバランスを整える代表的な石が『{stone_name}』です。"
         }
 
         elapsed_time = time.time() - start_time
@@ -114,48 +96,68 @@ def diagnose():
 
 def build_bracelet():
     """
-    第2フェーズ：石候補 + 手首サイズ + ビーズサイズ + デザイン選択から、完成ブレスレットを生成
+    第2フェーズ：石候補 + 手首サイズ + デザイン選択から、完成ブレスレットを生成
+    フロントからは:
+      - diagnosis_id
+      - stones_for_user
+      - wrist_inner_cm
+      - design_style / bracelet_type
+    などが送られてくる前提
     """
     start_time = time.time()
     print("--- Build Bracelet Request Started (Phase 2: Size & Design) ---")
 
     try:
-        # 1. リクエストボディの取得
         data = request.get_json(force=True, silent=True) or {}
-
         print(f"Received bracelet data: {data}")
 
-        # 2. パラメータ取得
+        # 1. パラメータ取得
         diagnosis_id = data.get("diagnosis_id", str(uuid.uuid4())[:8])
-        stones_for_user = result.get("stones_for_user") or [
+
+        stones_for_user = data.get("stones_for_user") or [
             {"name": "水晶", "reason": "AIが石を返さなかったためデフォルト"}
         ]
 
         try:
             wrist_inner_cm = float(data.get("wrist_inner_cm") or 15.0)
-            bead_size_mm = int(data.get("bead_size_mm") or 8)
         except ValueError as ve:
-            print(f"Value Error in dimensions: {ve}")
+            print(f"Value Error in wrist_inner_cm: {ve}")
             wrist_inner_cm = 15.0
-            bead_size_mm = 8
 
-        design_style = data.get("design_style", "おまかせ")  # デザインスタイル
+        # ビーズサイズはフロントで聞いていないので、今は固定 8mm とする
+        bead_size_mm = 8
 
-        # 3. ブレスレットデザイン生成
+        # フロント側では bracelet_type を送っている想定だが、互換性のため design_style も見る
+        bracelet_type = data.get("bracelet_type")
+        design_style = data.get("design_style")
+
+        bracelet_type = data.get("bracelet_type") or "element_top_only"
+        # stones_for_user は「エレメント石」の候補（今は1個だけ）
         bracelet_design = build_bracelet_design(
-            stones_for_user, wrist_inner_cm, bead_size_mm, design_style)
+            stones_for_user,
+            wrist_inner_cm,
+            bead_size_mm,
+            bracelet_type,
+            data  # birth_date など必要ならここから使えるように
+        )
+        stones = bracelet_design["stones"]
+        design_text = bracelet_design["design_text"]
+    
+        # 2. ブレスレットデザイン生成
+        bracelet_design = build_bracelet_design(
+            stones_for_user, wrist_inner_cm, bead_size_mm, design_style
+        )
         stones = bracelet_design["stones"]
         design_text = bracelet_design["design_text"]
 
-        # 4. 「あなたを導く石たち」というカスタム注文内容を生成
+        # 3. 「あなたを導く石たち」というカスタム注文内容を生成
         order_summary = generate_stone_summary(
-            stones, wrist_inner_cm, bead_size_mm, design_style)
+            stones, wrist_inner_cm, bead_size_mm, bracelet_type
+        )
 
-        # 処理時間の計測ログ
         elapsed_time = time.time() - start_time
         print(f"Build bracelet finished in {elapsed_time:.2f} seconds.")
 
-        # 5. 成功レスポンス
         response_data = {
             "diagnosis_id": diagnosis_id,
             "phase": "bracelet_complete",
@@ -164,7 +166,8 @@ def build_bracelet():
             "order_summary": order_summary,
             "wrist_inner_cm": wrist_inner_cm,
             "bead_size_mm": bead_size_mm,
-            "design_style": design_style
+            "design_style": bracelet_type,  # 名称は揃えるか、別フィールドにする
+            "bracelet_type": bracelet_type,
         }
 
         return jsonify(response_data)
@@ -178,16 +181,20 @@ def build_bracelet():
             "code": "BRACELET_ERROR"
         }), 500
 
+def build_bracelet_design(
+    stones_for_user: list,
+    wrist_inner_cm: float,
+    bead_size_mm: int,
+    bracelet_type: str,
+    request_data: dict
+) -> dict:
+    """
+    stones_for_user: エレメント石の候補（今は1種類想定）
+    bracelet_type:
+      - "birth_top_element_side": 誕生石トップ＋エレメントサイド
+      - "element_top_only": エレメントのみ
+    """
 
-def build_bracelet_design(stones_for_user: list, wrist_inner_cm: float, bead_size_mm: int, design_style: str) -> dict:
-    """
-    石候補 + サイズ + デザインスタイルから、ブレスレットの個数・配置を決める
-    デザイン選択によって石の選択を変える：
-    - 1色 → 1番の石のみ
-    - 2色 → 1番と2番の石を同じサイズで
-    - トップ → 1番の石を1つ、2番目の石を周りに敷き詰める
-    - おまかせ → 1番と2番で5:5のバランス
-    """
     if not stones_for_user:
         return {
             "stones": [],
@@ -195,91 +202,126 @@ def build_bracelet_design(stones_for_user: list, wrist_inner_cm: float, bead_siz
             "design_text": "石の候補が取得できませんでした。"
         }
 
-    # 1番・2番の石だけを使う
-    main = stones_for_user[0]  # 一番おすすめ
-    second = stones_for_user[1] if len(
-        stones_for_user) > 1 else stones_for_user[0]  # 二番目（なければ同じ）
+    # エレメント石（不足エレメントを補う石）
+    element_stone = stones_for_user[0]
 
-    # 必要な粒数をざっくり計算（ゴムの余裕を含む）
+    # 誕生石（プロフィールから決める）
+    birth_info = (request_data or {}).get("birth") or {}
+    birth_stone = get_birthstone_from_birth(birth_info)
+
     bracelet_length_mm = wrist_inner_cm * 10 + 10
     total_bead_count = max(12, int(bracelet_length_mm / bead_size_mm))
 
     stones = []
 
-    # デザインスタイルに応じた配置
-    if design_style == "単色（シンプル）":
-        # 1色：一番おすすめの石だけ
+    if bracelet_type == "birth_top_element_side":
+        # 誕生石を1粒トップ、残りをエレメント石でサイドに
+        surrounding_count = max(11, total_bead_count - 1)
+
         stones.append({
-            "name": main["name"],
-            "reason": main["reason"],
+            "name": birth_stone["name"],
+            "reason": birth_stone["reason"],
+            "count": 1,
+            "position": "accent"  # トップ
+        })
+        stones.append({
+            "name": element_stone["name"],
+            "reason": element_stone["reason"],
+            "count": surrounding_count,
+            "position": "side"
+        })
+
+        design_concept = f"誕生石「{birth_stone['name']}」をトップに、エレメントを整える石「{element_stone['name']}」で全体を包み込むブレスレット"
+
+    elif bracelet_type == "element_top_only":
+        # エレメント石のみで構成（実質単色）
+        stones.append({
+            "name": element_stone["name"],
+            "reason": element_stone["reason"],
             "count": total_bead_count,
             "position": "top"
         })
 
-    elif design_style == "２色（混合）":
-        # 2色：1番と2番の石を同じサイズで、6:4 くらいの配分
-        main_count = int(total_bead_count * 0.6)
-        second_count = total_bead_count - main_count
+        design_concept = f"不足しているエレメントを集中的に補う、{element_stone['name']}だけで仕上げたシンプルなブレスレット"
 
+    else:
+        # 万が一未知のタイプが来たときのフォールバック（単色扱い）
         stones.append({
-            "name": main["name"],
-            "reason": main["reason"],
-            "count": main_count,
+            "name": element_stone["name"],
+            "reason": element_stone["reason"],
+            "count": total_bead_count,
             "position": "top"
         })
-        stones.append({
-            "name": second["name"],
-            "reason": second["reason"],
-            "count": second_count,
-            "position": "side"
-        })
+        design_concept = f"{element_stone['name']}をメインにしたブレスレット"
 
-    elif design_style == "トップを入れる":
-        # トップ：1番の石を1粒だけトップに、2番目の石を周りに敷き詰める
-        surrounding_count = max(11, total_bead_count - 1)
-
-        stones.append({
-            "name": main["name"],
-            "reason": main["reason"],
-            "count": 1,
-            "position": "accent"   # トップ
-        })
-        stones.append({
-            "name": second["name"],
-            "reason": second["reason"],
-            "count": surrounding_count,
-            "position": "top"      # 周囲を埋める石
-        })
-
-    else:  # おまかせ
-        # デフォルトはバランス型：1番と2番を 5:5 くらい
-        main_count = total_bead_count // 2
-        second_count = total_bead_count - main_count
-
-        stones.append({
-            "name": main["name"],
-            "reason": main["reason"],
-            "count": main_count,
-            "position": "top"
-        })
-        stones.append({
-            "name": second["name"],
-            "reason": second["reason"],
-            "count": second_count,
-            "position": "side"
-        })
-
-    design_concept = f"「{main['name']}」と「{second['name']}」で仕上げるブレス（デザイン：{design_style}）"
-
-    design_text = generate_design_text(
-        main, second, stones, design_style, wrist_inner_cm, bead_size_mm)
+    design_text = generate_design_text_for_type(
+        birth_stone,
+        element_stone,
+        stones,
+        bracelet_type,
+        wrist_inner_cm,
+        bead_size_mm,
+        design_concept
+    )
 
     return {
         "stones": stones,
         "design_concept": design_concept,
         "design_text": design_text,
-        "sales_copy": f"あなたを導く {main['name']} ブレスレット"
+        "sales_copy": f"あなたを導く {element_stone['name']} ブレスレット"
     }
+
+def generate_design_text_for_type(
+    birth_stone: dict,
+    element_stone: dict,
+    stones: list,
+    bracelet_type: str,
+    wrist_inner_cm: float,
+    bead_size_mm: int,
+    design_concept: str
+) -> str:
+    if bracelet_type == "birth_top_element_side":
+        style_desc = (
+            "誕生石をブレスレットの中心に据え、その周りをエレメント石で囲むことで、"
+            "『本来のあなた』と『今必要なエネルギー』の両方を同時に引き出すデザインです。"
+        )
+    else:  # element_top_only
+        style_desc = (
+            "不足しているエレメントに特化したシンプルな構成で、"
+            "余計な要素をそぎ落とし、石の持つ力をダイレクトに感じやすいデザインです。"
+        )
+
+    part1 = f"""
+デザインコンセプト
+
+このブレスレットの核となる石は、**{element_stone['name']}**です。{element_stone['reason']}
+{design_concept}
+"""
+
+    if bracelet_type == "birth_top_element_side":
+        part2 = f"""
+誕生石とエレメント石のバランス
+
+トップには、あなたの生まれ持った流れを象徴する**{birth_stone['name']}**を一粒だけ配置しました。{birth_stone['reason']}
+その周りを取り囲むように配置された**{element_stone['name']}**が、今のあなたの状態に合わせて不足しているエレメントを丁寧に補っていきます。
+"""
+    else:
+        part2 = f"""
+エレメントに特化したシンプルデザイン
+
+ブレスレット全体を**{element_stone['name']}**のみで構成することで、テーマを一つに絞り、エネルギーの方向性をクリアにしました。
+迷いや雑音を減らし、「今の自分にとって何が大事か」を見つめ直すサポートをしてくれます。
+"""
+
+    part3 = f"""
+日常での使い方と効果
+
+内径**{wrist_inner_cm}cm**、ビーズサイズ**{bead_size_mm}mm**で仕上げているため、日常使いしやすく、さりげなく身につけていられます。
+{style_desc}
+ふと心が揺れたときや、選択に迷ったときは、ブレスレットにそっと触れて深呼吸をしてみてください。今のあなたに必要な方向へ、すこしずつ舵を切る手助けをしてくれるはずです。
+"""
+
+    return part1 + part2 + part3
 
 
 def generate_design_text(main_stone: dict, second_stone: dict, stones: list, design_style: str, wrist_inner_cm: float, bead_size_mm: int) -> str:
@@ -350,3 +392,37 @@ def generate_stone_summary(stones: list, wrist_inner_cm: float, bead_size_mm: in
     summary += f"\n■ ビーズ総数：{total_beads}個\n"
 
     return summary
+
+def get_birthstone_from_birth(birth: dict) -> dict:
+    """
+    生年月日から誕生石候補を返す（name, reason のdict）
+    今は簡易マップ（後で細かく調整OK）
+    """
+    date_str = (birth or {}).get("date")
+    if not date_str:
+        return {"name": "水晶", "reason": "どの月とも相性がよい万能の石です。"}
+
+    try:
+        month = int(date_str.split("-")[1])
+    except Exception:
+        return {"name": "水晶", "reason": "どの月とも相性がよい万能の石です。"}
+
+    BIRTHSTONE_MAP = {
+        1: "ガーネット",
+        2: "アメジスト",
+        3: "アクアマリン",
+        4: "水晶",
+        5: "エメラルド",
+        6: "ムーンストーン",
+        7: "ルビー",
+        8: "ペリドット",
+        9: "サファイア",
+        10: "オパール",
+        11: "トパーズ",
+        12: "ターコイズ",
+    }
+    name = BIRTHSTONE_MAP.get(month, "水晶")
+    return {
+        "name": name,
+        "reason": f"{month}月生まれのあなたを守る誕生石です。"
+    }
