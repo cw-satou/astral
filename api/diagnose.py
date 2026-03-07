@@ -83,7 +83,6 @@ def diagnose():
         except Exception as sheet_err:
             print("Sheet save error:", sheet_err)
 
-
         # 7. フロント向け返却（フル鑑定をそのまま渡す）
         full_response = {
             # まず Perplexity の結果を全部展開
@@ -93,7 +92,8 @@ def diagnose():
             "diagnosis_id": diagnosis_id,
             "element_lack": element_lack,
             "stone_name": stone_name,
-
+            # ★オラクルカード名をフロント向けにも固定キーで渡す
+            "oraclecardname": result.get("oracle_card", {}).get("name", ""),
             # short_message は、将来使いたくなった時用にここで決めてもOK
             "short_message": result.get("short_message") or
             f"今のあなたに不足しているのは「{element_lack}」のエレメント。そのバランスを整える代表的な石が『{stone_name}』です。",

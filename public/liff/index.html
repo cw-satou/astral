@@ -315,14 +315,14 @@
         let messageQueue = Promise.resolve();
         function getGreetingMessage() {
             const hour = new Date().getHours();
+            const nameForDisplay = getUserNameForDisplay();
+
             if (hour >= 5 && hour < 11) {
-                return "おはようございます。星の羅針盤「あとらす」です。\n\n今の気分や、ちょっと気になっていることがあれば、ここで整理してみませんか？\nあなたのお話と星の流れをもとに、今のあなたに合いそうな石や過ごし方のヒントをお伝えします。";
+                return `${nameForDisplay}さん、おはようございます。星の羅針盤「あとらす」です。\n\n今の気分や、ちょっと気になっていることがあれば、ここで整理してみませんか？\nあなたのお話と星の流れをもとに、今のあなたに合いそうな石や過ごし方のヒントをお伝えします。`;
             } else if (hour >= 11 && hour < 17) {
-                return "こんにちは。星の羅針盤「あとらす」です。\n\n仕事や人間関係、これからのことなど、頭の中が少しごちゃごちゃしているときは、一度言葉にしてみるのがおすすめです。\nいま気になっていることを教えていただければ、星の配置とあわせて、落ち着いて考えるためのヒントをお出しします。";
-            } else if (hour >= 17 && hour < 22) {
-                return "こんばんは。星の羅針盤「あとらす」です。\n\n一日の終わりに、心の中を少しだけ振り返ってみませんか。\nうまく言葉にならなくても大丈夫なので、気になっていることやモヤモヤしていることを、ここにそのまま書いてみてください。";
+                return `${nameForDisplay}さん、こんにちは。星の羅針盤「あとらす」です。\n\n仕事や人間関係、これからのことなど、頭の中が少しごちゃごちゃしているときは、一度言葉にしてみるのがおすすめです。\nいま気になっていることを教えていただければ、星の配置とあわせて、落ち着いて考えるためのヒントをお出しします。`;
             } else {
-                return "こんばんは。星の羅針盤「あとらす」です。\n\n一日の終わりに、心の中を少しだけ振り返ってみませんか。\nうまく言葉にならなくても大丈夫なので、気になっていることやモヤモヤしていることを、ここにそのまま書いてみてください。";
+                return `${nameForDisplay}さん、こんばんは。星の羅針盤「あとらす」です。\n\n一日の終わりに、心の中を少しだけ振り返ってみませんか。\nうまく言葉にならなくても大丈夫なので、気になっていることやモヤモヤしていることを、ここにそのまま書いてみてください。`;
             }
         }
         function addMsg(text, isUser = false) {
@@ -447,30 +447,36 @@
             const savedDate = birth.date || '';
             const savedTime = birth.time || '';
             const savedPlace = birth.place || '';
+            const savedName = formData.name || '';
+
             userState = 'astrological_info';
             setInputArea(`
-                <div class="input-field">
-                    <label>性別 *</label>
-                    <div class="btn-group">
-                        <button class="btn-toggle ${gender === '女性' ? 'active' : ''}" onclick="selectGender('女性', this)">女性</button>
-                        <button class="btn-toggle ${gender === '男性' ? 'active' : ''}" onclick="selectGender('男性', this)">男性</button>
-                        <button class="btn-toggle ${gender === 'その他' ? 'active' : ''}" onclick="selectGender('その他', this)">その他</button>
-                    </div>
-                </div>
-                <div class="input-field">
-                    <label>生年月日 *</label>
-                    <input type="text" id="birthDate" value="${savedDate}" required>
-                </div>
-                <div class="input-field">
-                    <label>出生時間</label>
-                    <input type="text" id="birthTime" value="${savedTime}">
-                </div>
-                <div class="input-field">
-                    <label>出生地</label>
-                    <input type="text" id="birthPlace" placeholder="例：札幌市" value="${savedPlace}">
-                </div>
-                <button class="btn" onclick="nextStep()">次へ</button>
-            `);
+        <div class="input-field">
+            <label>お名前（ニックネーム）</label>
+            <input type="text" id="userName" value="${savedName}" placeholder="例：さと">
+        </div>
+        <div class="input-field">
+            <label>性別 *</label>
+            <div class="btn-group">
+                <button class="btn-toggle ${gender === '女性' ? 'active' : ''}" onclick="selectGender('女性', this)">女性</button>
+                <button class="btn-toggle ${gender === '男性' ? 'active' : ''}" onclick="selectGender('男性', this)">男性</button>
+                <button class="btn-toggle ${gender === 'その他' ? 'active' : ''}" onclick="selectGender('その他', this)">その他</button>
+            </div>
+        </div>
+        <div class="input-field">
+            <label>生年月日 *</label>
+            <input type="text" id="birthDate" value="${savedDate}" required>
+        </div>
+        <div class="input-field">
+            <label>出生時間</label>
+            <input type="text" id="birthTime" value="${savedTime}">
+        </div>
+        <div class="input-field">
+            <label>出生地</label>
+            <input type="text" id="birthPlace" placeholder="例：札幌市" value="${savedPlace}">
+        </div>
+        <button class="btn" onclick="nextStep()">次へ</button>
+    `);
             flatpickr("#birthDate", {
                 locale: "ja",
                 dateFormat: "Y-m-d",
@@ -552,8 +558,9 @@
             stepOrderChoice();
         }
         function stepConcerns() {
+            const nameForDisplay = getUserNameForDisplay();
             const text = [
-                '今のあなたが特に気になっているテーマを教えてください。',
+                `${nameForDisplay}さんがいま、特に気になっているテーマを教えてください。`,
                 '複数選んでも大丈夫です。'
             ].join('\n\n');
 
@@ -609,11 +616,12 @@
         }
 
         async function executeDiagnose() {
+            const nameForDisplay = getUserNameForDisplay();
             let problem = document.getElementById('problemText')?.value || '';
             const date = formData.birth?.date;
 
             if (!problem) {
-                problem = "具体的なご相談内容は書かれていないため、今のあなた全体の流れや、これから大切にしたいテーマがわかるような全体運を中心に読み解いてください。";
+                problem = `具体的なご相談内容は書かれていないため、今の${nameForDisplay}の全体の流れや、これから大切にしたいテーマがわかるような全体運を中心に読み解いてください。`;
             }
 
             // ① ユーザーの入力をそのままユーザー吹き出しで表示
@@ -628,7 +636,7 @@
 
             // ② 悩みの確認＋診断開始メッセージ（bot側）
             const confirmText = [
-                "あなたの今のお悩みはわかりました。ありがとうございます。",
+                `${nameForDisplay}さんの今のお悩みはわかりました。ありがとうございます。`,
                 "この内容で、星と石の流れを読み解いていきます。少しだけお待ちくださいね。"
             ].join("\n");
 
@@ -666,9 +674,9 @@
 
         function displayDivinationResult(result) {
             clearInputArea();
-
+            const nameForDisplay = getUserNameForDisplay();
             const stoneName = result.stone_name ||
-                (result.stones_for_user?.[0]?.name || "あなたの石");
+                (result.stones_for_user?.[0]?.name || `${nameForDisplay}さんの石`);
 
             const chatBox = document.getElementById('chatBox');
 
@@ -677,7 +685,7 @@
                     key: 'destiny_map',
                     title: '運命の地図',
                     text: result.destiny_map,
-                    lead: 'まずは、今のあなた全体のテーマや流れを地図のように見ていきますね。'
+                    lead: 'まずは、今の${nameForDisplay}さん全体のテーマや流れを地図のように見ていきますね。'
                 },
                 {
                     key: 'past',
@@ -689,7 +697,7 @@
                     key: 'present',
                     title: '今のテーマ',
                     text: result.present,
-                    lead: 'ここからは、まさに「今」のあなたにフォーカスして、取り組むべきテーマを見てみましょう。'
+                    lead: 'ここからは、まさに「今」の${nameForDisplay}さんにフォーカスして、取り組むべきテーマを見てみましょう。'
                 },
                 {
                     key: 'future',
@@ -701,13 +709,13 @@
                     key: 'element_diagnosis',
                     title: 'エレメントのバランス',
                     text: result.element_diagnosis,
-                    lead: '次は、火・地・風・水のバランスから、あなたのエネルギーの癖や不足しがちな部分を見ていきます。'
+                    lead: '次は、火・地・風・水のバランスから、${nameForDisplay}さんのエネルギーの癖や不足しがちな部分を見ていきます。'
                 },
                 {
                     key: 'oracle_message',
                     title: 'オラクルからのメッセージ',
                     text: result.oracle_message,
-                    lead: '引いたオラクルカードが、今のあなたにどんなことを伝えたがっているのかも整理していきます。'
+                    lead: '引いたオラクルカードが、今の${nameForDisplay}さんにどんなことを伝えたがっているのかも整理していきます。'
                 },
                 {
                     key: 'bracelet_proposal',
@@ -719,7 +727,7 @@
                     key: 'stone_support_message',
                     title: '石からのサポートメッセージ',
                     text: result.stone_support_message,
-                    lead: '最後に、「これらの石たちが今のあなたをどう支えてくれるのか」をまとめてお伝えします。'
+                    lead: '最後に、「これらの石たちが今の${nameForDisplay}さんをどう支えてくれるのか」をまとめてお伝えします。'
                 },
             ].filter(sec => sec.text);
 
@@ -752,9 +760,9 @@
                         [
                             "ここまで読んでくださってありがとうございます。",
                             "",
-                            "この結果を読むだけでも、石たちのエネルギーは少しずつあなたに届き始めています。",
+                            "この結果を読むだけでも、石たちのエネルギーは少しずつ${nameForDisplay}さんに届き始めています。",
                             "もし「実際に身につけてみたい」「お守りとしてそばに置いておきたい」と感じたら、",
-                            "今のあなたに合わせてブレスレットのかたちに整えることもできますよ。"
+                            "今の${nameForDisplay}さんに合わせてブレスレットのかたちに整えることもできますよ。"
                         ].join("\n"),
                         false
                     );
@@ -765,10 +773,10 @@
                             "実際に石を身につけると、ふと目に入るたびに「今日の自分の軸」を思い出しやすくなります。",
                             "",
                             "ここから先は、",
-                            "・今のあなたの手首サイズに合わせて",
+                            "・今の${nameForDisplay}さんの手首サイズに合わせて",
                             "・今回選ばれた石たちを中心に",
                             "・普段の服装やシーンにもなじむように",
-                            "あなただけのブレスレットにデザインしていくステップです。"
+                            "${nameForDisplay}さんのブレスレットにデザインしていくステップです。"
                         ].join("\n"),
                         false
                     );
@@ -824,7 +832,8 @@
 
 
         function stepOrderChoice() {
-            addMsg("この石を身につけるとしたら、どのようなかたちが今のあなたにしっくりきそうか教えてください。", false);
+            const nameForDisplay = getUserNameForDisplay();
+            addMsg(`この石を身につけるとしたら、どのようなかたちが今の${nameForDisplay}さんにしっくりきそうか教えてください。`, false);
 
             setInputArea(`
                 <button class="btn" onclick="selectOrderType('custom')">🎨 オーダーメイド（カスタマイズ）</button>
@@ -938,17 +947,18 @@
         }
 
         function displayBraceletResult(data) {
+            const nameForDisplay = getUserNameForDisplay();
             clearInputArea();
             const section = document.createElement('div');
             section.className = 'result-section';
-            let html = `<h3>💎 あなたを導くブレスレットはこれです</h3>`;
+            let html = `<h3>💎 ${nameForDisplay}さんを導くブレスレットはこれです</h3>`;
             html += `<p>${formatText(data.design_text || 'デザイン情報がありません')}</p>`;
             section.innerHTML = html;
             document.getElementById('chatBox').appendChild(section);
             if (data.order_summary) {
                 const orderSection = document.createElement('div');
                 orderSection.className = 'result-section';
-                orderSection.innerHTML = `<h3>📋 あなたを導く石たち</h3><p style="font-size:13px;">${data.order_summary.replace(/\n/g, '<br>')}</p>`;
+                orderSection.innerHTML = `<h3>📋 ${nameForDisplay}さんを導く石たち</h3><p style="font-size:13px;">${data.order_summary.replace(/\n/g, '<br>')}</p>`;
                 document.getElementById('chatBox').appendChild(orderSection);
             }
             document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
@@ -959,14 +969,43 @@
                 bead_size_mm: formData.bead_size_mm
             };
             console.log('Saving profile:', savedProfile);
+
+            // ② 注文概要があるなら表示（任意）
+            if (data.ordersummary) {
+                const orderSection = document.createElement('div');
+                orderSection.className = 'result-section';
+                orderSection.innerHTML = `
+      <h3>ご注文内容の概要</h3>
+      <p style="font-size:13px;">${data.ordersummary.replace(/\n/g, '<br>')}</p>
+    `;
+                document.getElementById('chatBox').appendChild(orderSection);
+            }
             setInputArea(`
                 <button class="btn" onclick="confirmOrder()">📱 LINEでオーダーする</button>
                 <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
             `);
         }
         function confirmOrder() {
-            window.location.href = "https://line.me/R/ti/p/あなたのID";
+            const diagnosisId = window.diagnosisId;
+            const wrist = formData.wristinnercm;
+            const problem = formData.problem || '';
+            const oracleCard = divinationResult?.oraclecardname || '';
+
+            const lines = [
+                'この内容でブレスレットを注文したいです。',
+                diagnosisId ? `診断ID: ${diagnosisId}` : '',
+                wrist ? `手首内径: ${wrist}cm` : '',
+                problem ? `お悩み: ${problem}` : '',
+                oracleCard ? `オラクルカード: ${oracleCard}` : ''
+            ].filter(Boolean);
+
+            const text = lines.join('\n');
+            const encoded = encodeURIComponent(text);
+
+            // ★ あとらすの公式アカウントIDに置き換えてね
+            window.location.href = `https://line.me/R/oaMessage/@586spjck/?${encoded}`;
         }
+
         function restartFromBeginning() {
             const box = document.getElementById('chatBox');
             box.innerHTML = '';
@@ -997,6 +1036,7 @@
 
         function saveProfileToLocalStorage() {
             const profile = {
+                name: formData.name,                     // ★ 追加
                 gender: formData.gender,
                 birth: formData.birth,
                 wrist_inner_cm: formData.wrist_inner_cm,
@@ -1014,9 +1054,14 @@
             }
         }
 
-
+        function getUserNameForDisplay() {
+            return (formData.name && formData.name.trim())
+                ? `${formData.name.trim()}さん`
+                : 'あなた';
+        }
         function nextStep() {
             if (userState === 'astrological_info') {
+                const name = document.getElementById('userName')?.value || '';
                 const date = document.getElementById('birthDate')?.value;
                 const time = document.getElementById('birthTime')?.value || '';
                 const place = document.getElementById('birthPlace')?.value || '';
@@ -1030,16 +1075,17 @@
                     return;
                 }
 
+                formData.name = name;              // ★ 追加
                 formData.birth = { date, time, place };
                 console.log('Saved astrological info:', formData.birth);
 
-                // ここでユーザー入力をチャットに一度出す
                 const summaryForUser = [
+                    name ? `お名前：${name}` : null,
                     `性別：${formData.gender}`,
                     `生年月日：${date}`,
                     `出生時間：${time || '未入力'}`,
                     `出生地：${place || '未入力'}`
-                ].join('\n');
+                ].filter(Boolean).join('\n');
 
                 addMsg(summaryForUser, true);
 
@@ -1050,6 +1096,7 @@
                 stepProblem();
             }
         }
+
         function scrollChatToBottom() {
             const box = document.getElementById('chatBox');
             if (!box) return;
