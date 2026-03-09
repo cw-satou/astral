@@ -401,14 +401,14 @@
             addMsg('今日はどちらにしますか？', false);
 
             setInputArea(`
+    <button class="btn" onclick="selectMode('divination')">
+      ✨ 導きの石を診断する
+    </button>
     <button class="btn" onclick="selectMode('today_fortune')">
       🔮 今日の運勢を診断する
     </button>
-    <button class="btn" onclick="selectMode('divination')">
-      ✨ 石の魔法の導きを得る
-    </button>
     <button class="btn btn-secondary" onclick="selectMode('stone_select')">
-      💎 好みの石から魔法を得る
+      💎 好みでブレスレットを選ぶ
     </button>
   `);
         }
@@ -420,10 +420,10 @@
                 addMsg('今日の運勢を診断する', true);
                 stepTodayFortune();          // 今日の運勢 → テーマへ流す関数
             } else if (mode === 'divination') {
-                addMsg('石の魔法の導きを得る', true);
+                addMsg('導きの石を診断する', true);
                 stepDivinationIntro();       // 既存
             } else {
-                addMsg('好みの石から魔法を得る', true);
+                addMsg('好みでブレスレットを選ぶ', true);
                 stepStoneSelectMethod();     // 既存
             }
         }
