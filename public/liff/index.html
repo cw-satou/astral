@@ -753,13 +753,15 @@
   `);
             const thinkingTimer = setInterval(rotateThinking, 2000);
             try {
-                formData.line_user_id = lineUserId;
-                fetch(`/api/diagnose`, {
+                formData.line_user_id = window.LINE_USER_ID;
+                const res = await fetch(`/api/diagnose`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
                 });
+
                 const json = await res.json();
+                window.diagnosisId = json.diagnosis_id;
                 if (json.error) {
                     clearInterval(thinkingTimer);
                     addMsg(`エラーが発生しました: ${json.error}`, false);
@@ -768,7 +770,6 @@
                 }
                 clearInterval(thinkingTimer);
                 divinationResult = json;
-                window.diagnosisId = json.diagnosis_id;
                 displayDivinationResult(json);
             } catch (err) {
                 clearInterval(thinkingTimer);
@@ -1159,7 +1160,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        diagnosis_id: window.diagnosisId,
+                        diagnosis_id: window.diagnosisId || divinationResult.diagnosis_id,
                         stones_for_user: divinationResult.stones_for_user || [
                             {
                                 name: divinationResult.stone_name,
@@ -1252,7 +1253,7 @@ ${data.product_name}
                 addMsg("商品ページが見つかりませんでした", false);
                 return;
             }
-            const diagnosisId = divinationResult.diagnosis_id
+            const diagnosisId = window.diagnosisId
             const url = `https://spicastar.info/atlas/shop/product/${slug}/` + "?d=" + diagnosisId;
             window.location.href = url;
         }
@@ -1510,8 +1511,13 @@ ${data.product_name}
         }
         let userId = null;
         // ★ ページ読み込み時は「アニメだけ」やる
-        window.onload = function () {
-            window.addEventListener("load",fillOrderNote);
+        window.onload = async function () {
+            try {
+                await initLiff();
+            } catch (e) {
+                console.log("LIFF init error", e);
+            }
+            window.addEventListener("load", fillOrderNote);
             const logoOverlay = document.getElementById('logoOverlay');
             const fortuneGirl = document.querySelector('.fortune-girl');
             // 1. ロゴをフェードイン
