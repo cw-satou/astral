@@ -3,6 +3,7 @@ import json
 import re
 import random
 from openai import OpenAI
+from collections import Counter
 
 
 # APIキーの取得
@@ -106,6 +107,225 @@ MAIN_TO_SUB_MAP = {
     "gray":   ["マダガスカル産ローズクォーツ", "シーブルーカルセドニー"],
 }
 
+STONE_SIZES = {
+    "main10": 10,
+    "main12": 12,
+    "bead8": 8,
+    "spacer5": 5,
+    "spacer2": 2
+}
+
+ELEMENT_PREFIX = {
+    "water": ["星海", "蒼海", "月海", "深海"],
+    "fire": ["紅炎", "焔", "太陽", "烈火"],
+    "wind": ["蒼風", "星風", "天空", "疾風"],
+    "earth": ["大地", "深森", "原石", "蒼岩"]
+}
+
+THEME_SUFFIX = {
+    "love": ["の恋", "の絆", "の愛"],
+    "heal": ["のやすらぎ", "の癒し", "の静寂"],
+    "action": ["の勇気", "の前進", "の意志"],
+    "intuition": ["のひらめき", "の導き", "の叡智"]
+}
+
+def bracelet_length(inner_size):
+    return inner_size * 10 + 10
+
+def fixed_length(main_size):
+
+    main_total = main_size * 2
+    spacer_total = 5 * 3
+
+    return main_total + spacer_total
+
+def calculate_8mm_with_spacers(inner_size, main_size):
+
+    total = bracelet_length(inner_size)
+
+    fixed = fixed_length(main_size)
+
+    remain = total - fixed
+
+    beads8 = 0
+    spacer2 = 0
+    used = 0
+
+    while True:
+
+        if beads8 % 3 == 0 and beads8 != 0:
+            if used + 2 > remain:
+                break
+            used += 2
+            spacer2 += 1
+
+        if used + 8 > remain:
+            break
+
+        used += 8
+        beads8 += 1
+
+    return {
+        "8mm": beads8,
+        "spacer2": spacer2
+    }
+
+ELEMENT_NAMES = {
+    "water": ["蒼海", "月海", "星海"],
+    "fire": ["紅炎", "太陽", "焔"],
+    "wind": ["蒼風", "星風", "天空"],
+    "earth": ["大地", "深森"]
+}
+
+THEME_NAMES = {
+    "love": "の恋",
+    "heal": "のやすらぎ",
+    "action": "の勇気",
+    "intuition": "のひらめき"
+}
+
+ELEMENT_EN = {
+    "water": "Ocean",
+    "fire": "Flame",
+    "wind": "Wind",
+    "earth": "Earth"
+}
+
+THEME_EN = {
+    "love": "Love",
+    "heal": "Serenity",
+    "action": "Courage",
+    "intuition": "Insight"
+}
+
+def generate_bracelet_name_en(element, theme):
+
+    el = ELEMENT_EN.get(element, "Star")
+    th = THEME_EN.get(theme, "Light")
+
+    return f"{el} {th}"
+
+def generate_bracelet_name_en(element, theme):
+
+    el = ELEMENT_EN.get(element, "Star")
+    th = THEME_EN.get(theme, "Light")
+
+    return f"{el} {th}"
+
+def generate_bracelet_image(layout):
+
+    stones = [x for x in layout if "spacer" not in x]
+
+    stone_text = ", ".join(stones)
+
+    prompt = (
+        f"luxury gemstone bracelet, {stone_text}, "
+        "symmetrical round bead bracelet, crystal jewelry, "
+        "high-end jewelry photography, white background, soft light"
+    )
+
+    resp = client.chat.completions.create(
+        model="nano-banana-2",
+        messages=[
+            {"role": "system", "content": "You generate product images."},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.3
+    )
+
+    return resp.choices[0].message.content
+
+def generate_bracelet_name(element, theme):
+
+    prefix_list = ELEMENT_PREFIX.get(element, ["星"])
+    suffix_list = THEME_SUFFIX.get(theme, ["の光"])
+
+    prefix = random.choice(prefix_list)
+    suffix = random.choice(suffix_list)
+
+    return prefix + suffix
+
+def generate_bracelet_design(result, inner_size, element="water", theme="love"):
+
+    name = generate_bracelet_name(element, theme)
+    name_en = generate_bracelet_name_en(element, theme)
+
+    main = result["stones_main"]
+    sub = result["stones_sub"]
+
+    main_size = main[0]["size"]
+
+    calc = calculate_8mm_with_spacers(inner_size, main_size)
+
+    beads8 = calc["8mm"]
+    spacer2 = calc["spacer2"]
+
+    layout = generate_bracelet_layout(main, sub, beads8, spacer2)
+
+    stone_counts = count_stones(layout)
+
+    name = generate_bracelet_name(element, theme)
+
+    image_data = generate_bracelet_image(layout)
+
+    return {
+        "bracelet_name": name,
+        "bracelet_name_en": name_en,
+        "size": inner_size,
+        "main_stone": main[0]["name"],
+        "main_size": main_size,
+        "layout": layout,
+        "stone_counts": stone_counts,
+        "8mm_beads": beads8,
+        "2mm_spacers": spacer2,
+        "5mm_spacers": 3,
+        "image": image_data
+    }
+
+def generate_bracelet_layout(main_stones, sub_stones, bead_count):
+
+    main = main_stones[0]["name"]
+    sub = sub_stones[0]["name"] if sub_stones else "水晶"
+
+    layout = []
+
+    # 奇数ならセンター配置
+    if bead_count % 2 == 1:
+
+        center = "水晶"
+
+        half = (bead_count - 1) // 2
+
+        pattern = []
+
+        for i in range(half):
+            if i % 4 == 1:
+                pattern.append(main)
+            else:
+                pattern.append(sub)
+
+        layout = pattern + [center] + pattern[::-1]
+
+    else:
+
+        half = bead_count // 2
+
+        pattern = []
+
+        for i in range(half):
+            if i % 4 == 1:
+                pattern.append(main)
+            else:
+                pattern.append(sub)
+
+        layout = pattern + pattern[::-1]
+
+    return layout
+
+
+def count_stones(layout):
+    return dict(Counter(layout))
+
 SYSTEM_PROMPT = """
 あなたは、西洋占星術とクリスタルヒーリングに精通したプロの占い師です。
 ユーザーの悩みに寄り添い、希望を与え、まずは「相性の良い石の種類」を提案してください。
@@ -151,6 +371,40 @@ AVAILABLE_STONES = """
 # - カーネリアン（赤）
 # """
 
+def generate_bracelet_layout(main_stones, sub_stones, beads8, spacer2):
+
+    main = main_stones[0]["name"]
+    sub = sub_stones[0]["name"] if sub_stones else "水晶"
+
+    half_beads = beads8 // 2
+    half_spacers = spacer2 // 2
+
+    pattern = []
+
+    bead_counter = 0
+    spacer_counter = 0
+
+    for i in range(half_beads):
+
+        if i == half_beads // 2:
+            pattern.append(main)
+        else:
+            pattern.append(sub)
+
+        bead_counter += 1
+
+        # 3〜4石ごとにスペーサー
+        if bead_counter % 3 == 0 and spacer_counter < half_spacers:
+            pattern.append("spacer2")
+            spacer_counter += 1
+
+    center = ["spacer5", main, "spacer5"]
+
+    layout = pattern + center + pattern[::-1]
+
+    layout.append("spacer5")
+
+    return layout
 
 def generate_today_fortune(user_input: dict) -> str:
     """生年月日・出生時間・出生地を使って「今日の運勢」を生成"""

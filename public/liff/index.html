@@ -337,11 +337,20 @@
             pointer-events: none;
             z-index: 1;
         }
+
+        .progress-bar {
+            padding: 10px;
+            font-size: 12px;
+            text-align: center;
+            background: #f6f6f6;
+            border-bottom: 1px solid #ddd;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
+        <div id="progressBar" class="progress-bar"></div>
         <div id="logoOverlay" class="logo-overlay">
             <img src="/res/img/logo.png" alt="星の羅針盤 あとらす" class="logo-image">
         </div>
@@ -357,6 +366,15 @@
         let divinationResult = null;
         let selectedMode = null;
         let messageQueue = Promise.resolve();
+        function setProgress(step, total, label) {
+
+            const el = document.getElementById("progressBar");
+
+            el.innerHTML = `
+    STEP ${step} / ${total}<br>
+    ${label}
+  `;
+        }
         function getGreetingMessage() {
             const hour = new Date().getHours();
             const nameForDisplay = getUserNameForDisplay();
@@ -370,16 +388,15 @@
             }
         }
         function addMsg(text, isUser = false) {
-            // キューに処理を積む
-            messageQueue = messageQueue.then(() => showMessage(text, isUser));
+            messageQueue = messageQueue.then(() => renderMessage(text, isUser));
             return messageQueue;
         }
-
-        // 実際の描画処理
-        function showMessage(text, isUser = false) {
+        function renderMessage(text, isUser = false) {
             return new Promise((resolve) => {
+
                 const box = document.getElementById('chatBox');
                 const div = document.createElement('div');
+
                 div.className = `msg ${isUser ? 'user' : 'bot'}`;
                 box.appendChild(div);
 
@@ -387,6 +404,7 @@
                     text.replace(/\n+/g, '<br>').replace(/(<br>)+/g, '<br><br>')
                 );
 
+                // ユーザーは即表示
                 if (isUser) {
                     div.innerHTML = formatted;
                     scrollChatToBottom();
@@ -394,15 +412,13 @@
                     return;
                 }
 
+                // botはタイプ表示
                 typeText(div, formatted, 40).then(() => {
                     scrollChatToBottom();
                     resolve();
                 });
             });
         }
-
-
-
         function formatText(text) {
             if (!text) return '';
 
@@ -542,6 +558,7 @@
             showAstrologicalInfoForm();
         }
         function showAstrologicalInfoForm() {
+            setProgress(1, 4, "プロフィール入力");
             addMsg('診断に必要な情報をお聞きします。', false);
 
             const gender = formData.gender || '';
@@ -693,6 +710,7 @@
             stepOrderChoice();
         }
         function stepConcerns() {
+            setProgress(2, 4, "悩みの診断");
             const nameForDisplay = getUserNameForDisplay();
             const text = [
                 `${nameForDisplay}がいま、特に気になっているテーマを教えてください。`,
@@ -751,6 +769,7 @@
         }
 
         async function executeDiagnose() {
+
             const nameForDisplay = getUserNameForDisplay();
             let problem = document.getElementById('problemText')?.value || '';
             const date = formData.birth?.date;
@@ -782,10 +801,10 @@
             setInputArea(`
     <div class="loading">
       <div class="spinner"></div>
-      <p>星の配置を読み解いています... 🌌</p>
+      <p id="thinkingText">星の配置を読み解いています... 🌌</p>
     </div>
   `);
-
+            const thinkingTimer = setInterval(rotateThinking, 2000);
             try {
                 const res = await fetch(`/api/diagnose`, {
                     method: 'POST',
@@ -794,20 +813,73 @@
                 });
                 const json = await res.json();
                 if (json.error) {
+                    clearInterval(thinkingTimer);
                     addMsg(`エラーが発生しました: ${json.error}`, false);
                     clearInputArea();
                     return;
                 }
+                clearInterval(thinkingTimer);
                 divinationResult = json;
                 window.diagnosisId = json.diagnosis_id;
                 displayDivinationResult(json);
             } catch (err) {
+                clearInterval(thinkingTimer);
                 addMsg('通信エラーが発生しました', false);
                 clearInputArea();
             }
         }
+        const thinkingMessages = [
+            "星の配置を読み解いています…",
+            "運命の流れを確認しています…",
+            "あなたに合う石を探しています…",
+            "ブレスレットの構成を考えています…"
+        ];
 
-        function displayDivinationResult(result) {
+        let thinkingIndex = 0;
+
+        function rotateThinking() {
+
+            const el = document.getElementById("thinkingText");
+            if (!el) return;
+
+            thinkingIndex = (thinkingIndex + 1) % thinkingMessages.length;
+
+            el.textContent = thinkingMessages[thinkingIndex];
+
+        }
+        async function showOracleCard(card) {
+
+            await addMsg("カードをシャッフルしています…", false);
+
+            await new Promise(r => setTimeout(r, 1200));
+
+            await addMsg("1枚引きます…", false);
+
+            await new Promise(r => setTimeout(r, 1000));
+
+            const cardHtml = `
+ <div class="msg bot">
+   <div class="result-section" style="text-align:center;">
+     <h3>オラクルカード</h3>
+
+     <img src="${card.image_url}" 
+          style="width:200px;border-radius:12px;margin:12px 0;">
+
+     <p>
+       ${card.name}
+       ${card.is_upright ? "（正位置）" : "（逆位置）"}
+     </p>
+
+   </div>
+ </div>
+ `;
+            const box = document.getElementById("chatBox");
+            box.insertAdjacentHTML("beforeend", cardHtml);
+            scrollChatToBottom();
+        }
+        async function displayDivinationResult(result) {
+            setProgress(3, 4, "導きの石を選定");
+            await showOracleCard(result.oracle_card);
             clearInputArea();
             const nameForDisplay = getUserNameForDisplay();
             const stoneName = result.stone_name ||
@@ -1213,7 +1285,7 @@
                     clearInputArea();
                     return;
                 }
-                displayBraceletResult(json);
+                displayBraceletResult(json.bracelet || json);
             } catch (err) {
                 addMsg('通信エラーが発生しました', false);
                 clearInputArea();
@@ -1221,43 +1293,66 @@
         }
 
         function displayBraceletResult(data) {
+            setProgress(4, 4, "ブレスレット生成");
             const nameForDisplay = getUserNameForDisplay();
             clearInputArea();
+
+            const chatBox = document.getElementById('chatBox');
+
             const section = document.createElement('div');
             section.className = 'result-section';
-            let html = `<h3>💎 ${nameForDisplay}を導くブレスレットはこれです</h3>`;
-            html += `<p>${formatText(data.design_text || 'デザイン情報がありません')}</p>`;
-            section.innerHTML = html;
-            document.getElementById('chatBox').appendChild(section);
-            if (data.order_summary) {
-                const orderSection = document.createElement('div');
-                orderSection.className = 'result-section';
-                orderSection.innerHTML = `<h3>📋 ${nameForDisplay}を導く石たち</h3><p style="font-size:13px;">${data.order_summary.replace(/\n/g, '<br>')}</p>`;
-                document.getElementById('chatBox').appendChild(orderSection);
-            }
-            document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
-            const savedProfile = {
-                gender: formData.gender,
-                birth: formData.birth,
-                wrist_inner_cm: formData.wrist_inner_cm,
-                bead_size_mm: formData.bead_size_mm
-            };
-            console.log('Saving profile:', savedProfile);
 
-            // ② 注文概要があるなら表示（任意）
-            if (data.ordersummary) {
-                const orderSection = document.createElement('div');
-                orderSection.className = 'result-section';
-                orderSection.innerHTML = `
-      <h3>ご注文内容の概要</h3>
-      <p style="font-size:13px;">${data.ordersummary.replace(/\n/g, '<br>')}</p>
-    `;
-                document.getElementById('chatBox').appendChild(orderSection);
+            let html = `<h3>💎 ${nameForDisplay}を導くブレスレット</h3>`;
+
+            // 商品名
+            if (data.name || data.bracelet_name) {
+                html += `<p style="font-weight:bold;font-size:16px;margin-top:6px;">${data.name || data.bracelet_name}</p>`;
             }
+
+            // 英語名
+            if (data.name_en || data.bracelet_name_en) {
+                html += `<p style="font-size:12px;opacity:0.7;">${data.name_en || data.bracelet_name_en}</p>`;
+            }
+
+            // 画像
+            if (data.image_url || data.image) {
+                html += `
+        <img 
+            src="${data.image_url || data.image}" 
+            style="width:100%;border-radius:12px;margin:12px 0;"
+        >`;
+            }
+
+            // デザイン説明
+            if (data.design_text) {
+                html += `<p>${formatText(data.design_text)}</p>`;
+            }
+
+            // 石構成
+            if (data.stone_counts) {
+                html += `<p style="margin-top:12px;font-size:13px;">`;
+
+                Object.entries(data.stone_counts).forEach(([stone, count]) => {
+                    html += `${stone} × ${count}<br>`;
+                });
+
+                html += `</p>`;
+            }
+
+            section.innerHTML = html;
+
+            chatBox.appendChild(section);
+            scrollChatToBottom();
+
+            // 注文ボタン
             setInputArea(`
-                <button class="btn" onclick="confirmOrder()">📱 LINEでオーダーする</button>
-                <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度占う</button>
-            `);
+        <button class="btn" onclick="confirmOrder()">
+          📱 LINEでオーダーする
+        </button>
+        <button class="btn btn-secondary" onclick="restartFromBeginning()">
+          🔄 もう一度占う
+        </button>
+    `);
         }
         function confirmOrder() {
             const diagnosisId = window.diagnosisId;
