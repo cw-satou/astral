@@ -291,12 +291,22 @@
             height: 100%;
             z-index: -1;
         }
+
+        .fortune-girl {
+            position: absolute;
+            bottom: 0;
+            right: -40px;
+            width: 220px;
+            pointer-events: none;
+            z-index: 2;
+        }
     </style>
 </head>
 
 <body>
     <div class="container">
         <canvas id="starfield"></canvas>
+        <img src="res/img/background.png" class="fortune-girl">
         <div class="chat-box" id="chatBox"></div>
         <div class="input-area" id="inputArea"></div>
     </div>
