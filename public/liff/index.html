@@ -1621,6 +1621,7 @@ ${data.product_name}
             await liff.init({
                 liffId: "2009078638-GZhFVgaz"
             });
+            await liff.ready;
             if (!liff.isLoggedIn()) {
                 liff.login();
                 return;
