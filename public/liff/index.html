@@ -1513,11 +1513,12 @@ ${data.product_name}
         // ★ ページ読み込み時は「アニメだけ」やる
         window.onload = async function () {
             try {
-                await initLiff();
+                await initLiff().then(() => {
+                    fillOrderNote();
+                });
             } catch (e) {
                 console.log("LIFF init error", e);
             }
-            window.addEventListener("load", fillOrderNote);
             const logoOverlay = document.getElementById('logoOverlay');
             const fortuneGirl = document.querySelector('.fortune-girl');
             // 1. ロゴをフェードイン
@@ -1622,6 +1623,7 @@ ${data.product_name}
             });
             if (!liff.isLoggedIn()) {
                 liff.login();
+                return;
             }
             const profile = await liff.getProfile();
             const userId = profile.userId;
