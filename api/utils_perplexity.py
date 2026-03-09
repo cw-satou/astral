@@ -19,41 +19,92 @@ else:
 
 
 # 天然石オラクルカードの定義
+# 天然石オラクルカードの定義（メイン石のみ）
 CRYSTAL_ORACLE_CARDS = [
     {
         "name": "アメジスト", "en": "Amethyst crystal",
         "meaning_up": "精神の安定・直感の覚醒", "meaning_rev": "不安・逃避・考えすぎ"
     },
     {
-        "name": "ローズクォーツ", "en": "Rose Quartz crystal",
-        "meaning_up": "無条件の愛・自己受容", "meaning_rev": "自信喪失・愛への渇望"
-    },
-    {
-        "name": "シトリン", "en": "Citrine crystal",
-        "meaning_up": "繁栄・自信・成功", "meaning_rev": "散財・エネルギー不足"
-    },
-    {
-        "name": "クリアクォーツ", "en": "Clear Quartz crystal",
-        "meaning_up": "浄化・新しいスタート", "meaning_rev": "混乱・方向性の喪失"
-    },
-    {
-        "name": "ブラックトルマリン", "en": "Black Tourmaline crystal",
-        "meaning_up": "強力な保護・グラウンディング", "meaning_rev": "恐れ・ネガティブな思考"
-    },
-    {
         "name": "ラピスラズリ", "en": "Lapis Lazuli crystal",
-        "meaning_up": "真実・第三の目", "meaning_rev": "コミュニケーション不足・幻想"
+        "meaning_up": "真実・洞察・精神性の成長", "meaning_rev": "自己不信・コミュニケーションの滞り"
     },
     {
-        "name": "カーネリアン", "en": "Carnelian crystal",
-        "meaning_up": "行動力・情熱", "meaning_rev": "怒り・無気力"
+        "name": "カーネリアン・サードニクス", "en": "Carnelian Sardonyx crystal",
+        "meaning_up": "行動力・情熱・自己表現", "meaning_rev": "衝動・エネルギーの空回り"
     },
     {
-        "name": "ムーンストーン", "en": "Moonstone crystal",
-        "meaning_up": "女性性・神秘・予感", "meaning_rev": "感情の不安定・迷い"
-    }
+        "name": "マラカイト", "en": "Malachite crystal",
+        "meaning_up": "深い癒やし・感情の解毒", "meaning_rev": "感情の停滞・過去への執着"
+    },
+    {
+        "name": "アイリスクォーツ", "en": "Iris Quartz crystal",
+        "meaning_up": "希望・再生・波動の調整", "meaning_rev": "気力不足・未来への不安"
+    },
 ]
 
+STOCK_STONES = {
+    # メイン候補（10mm / 12mm）
+    "ラピスラズリ": {
+        "size": 10,
+        "code": "G516-6H785",
+        "role": "main",
+        "color": "blue"
+    },
+    "カーネリアン・サードニクス": {
+        "size": 10,
+        "code": "G1096-H9127",
+        "role": "main",
+        "color": "orange"
+    },
+    "マラカイト": {
+        "size": 10,
+        "code": "N294-MCT10",
+        "role": "main",
+        "color": "green"
+    },
+    "アイリスクォーツ": {
+        "size": 12,
+        "code": "N780-7283M",
+        "role": "main",
+        "color": "clear"
+    },
+    "アメジスト": {
+        "size": 10,
+        "code": "N477-8824X",
+        "role": "main",
+        "color": "purple"
+    },
+
+    # サブ候補（8mm & 10mm）
+    "シーブルーカルセドニー": {
+        "size": 8,
+        "code": "CC359-01RA/#1",
+        "role": "sub",
+        "color": "light_blue"
+    },
+    "マダガスカル産ローズクォーツ": {
+        "size": 8,
+        "code": "N560-V4534",
+        "role": "sub",
+        "color": "pink"
+    },
+    "グレークォーツ": {
+        "size": 10,
+        "code": "G264-3836G",
+        "role": "sub",   # ★ここを main→sub に変更
+        "color": "gray"
+    },
+}
+
+MAIN_TO_SUB_MAP = {
+    "purple": ["マダガスカル産ローズクォーツ", "シーブルーカルセドニー", "グレークォーツ"],
+    "blue":   ["シーブルーカルセドニー", "グレークォーツ"],
+    "orange": ["マダガスカル産ローズクォーツ", "グレークォーツ"],
+    "green":  ["シーブルーカルセドニー", "グレークォーツ"],
+    "clear":  ["マダガスカル産ローズクォーツ", "シーブルーカルセドニー", "グレークォーツ"],
+    "gray":   ["マダガスカル産ローズクォーツ", "シーブルーカルセドニー"],
+}
 
 SYSTEM_PROMPT = """
 あなたは、西洋占星術とクリスタルヒーリングに精通したプロの占い師です。
@@ -76,19 +127,30 @@ SYSTEM_PROMPT = """
    占星術用語を使いすぎず、一般の人に分かりやすい言葉でやさしく表現してください。
 """
 
-
 AVAILABLE_STONES = """
-- アメジスト（紫）
-- ローズクォーツ（ピンク）
-- シトリン（黄）
-- 水晶（透明）
-- オニキス（黒）
-- アクアマリン（水色）
-- ラピスラズリ（紺）
-- タイガーアイ（茶金）
-- ムーンストーン（白）
-- カーネリアン（赤）
+- アメジスト
+- ラピスラズリ
+- カーネリアン・サードニクス
+- マラカイト
+- アイリスクォーツ
+- シーブルーカルセドニー
+- マダガスカル産ローズクォーツ
+- グレークォーツ
 """
+
+# AVAILABLE_STONES = """
+# - アメジスト（紫）
+# - ローズクォーツ（ピンク）
+# - シトリン（黄）
+# - 水晶（透明）
+# - オニキス（黒）
+# - アクアマリン（水色）
+# - ラピスラズリ（紺）
+# - タイガーアイ（茶金）
+# - ムーンストーン（白）
+# - カーネリアン（赤）
+# """
+
 
 def generate_today_fortune(user_input: dict) -> str:
     """生年月日・出生時間・出生地を使って「今日の運勢」を生成"""
@@ -197,7 +259,49 @@ def create_user_prompt(user_input, oracle_result):
   ]
 }}
 """
+def choose_main_stones(ai_stones):
+    # AIの提案名から、在庫テーブルにマッチするものだけ拾う
+    matched = []
+    for s in ai_stones:
+        name = s.get("name", "")
+        for stock_name, info in STOCK_STONES.items():
+            if info["role"] != "main":
+                continue
+            if stock_name in name:
+                matched.append({"name": stock_name, **info, "reason": s.get("reason", "")})
+                break
 
+    # 何もマッチしなければ、適当なメイン1個フォールバック
+    if not matched:
+        fallback_name = "アメジスト"
+        info = STOCK_STONES[fallback_name]
+        matched = [{
+            "name": fallback_name,
+            **info,
+            "reason": "今回のテーマに合う代表的な守護石として選びました。"
+        }]
+
+    # 最大2個までに制限
+    return matched[:2]
+
+def choose_sub_stones(main_stones):
+    sub_candidates = []
+    for m in main_stones:
+        color = m["color"]
+        for sub_name in MAIN_TO_SUB_MAP.get(color, []):
+            info = STOCK_STONES[sub_name]
+            sub_candidates.append({
+                "name": sub_name,
+                **info,
+                "reason": f"{m['name']}との色合いの相性を整えるために選びました。"
+            })
+
+    # 重複を削除
+    uniq = {}
+    for s in sub_candidates:
+        uniq[s["name"]] = s
+    # サブは1〜2個程度
+    return list(uniq.values())[:2]
 
 def generate_bracelet_reading(user_input: dict) -> dict:
     """ユーザー情報に基づき、オラクルカード・鑑定・石の提案を生成"""
@@ -289,17 +393,43 @@ def generate_bracelet_reading(user_input: dict) -> dict:
         card_image_url = f"https://image.pollinations.ai/prompt/{card_prompt.replace(' ', '%20')}?width=400&height=600&seed={random.randint(0,9999)}"
 
         # 石候補の画像
-        stone_names_en = ", ".join([s['name'] for s in result.get('stones_for_user', [])])
-        stones_prompt = f"gemstone collection, {stone_names_en}, crystal photography, soft lighting, white background, high quality, 8k"
-        stones_image_url = f"https://image.pollinations.ai/prompt/{stones_prompt.replace(' ', '%20')}?width=600&height=400&seed={random.randint(0,9999)}"
+        stones = result.get("stones_for_user", [])
+
+        # AIの提案石から、在庫テーブルにマッチするものを選定して、メイン石とサブ石を決定するロジック
+        # 1) AIの stones_for_user からメイン石を決定（1〜2個）
+        main_stones = choose_main_stones(stones)
+
+        # 2) メインの色合いからサブ石（8mm）を決定
+        sub_stones = choose_sub_stones(main_stones)
+
+        # 3) クライアントに返す stones_for_user を「メイン＋サブ」に差し替え
+        result["stones_for_user"] = main_stones + sub_stones
+
+        # 必要なら、別フィールドで区別してもOK
+        result["stones_main"] = main_stones
+        result["stones_sub"] = sub_stones
 
         # 結果に統合
+        # ここまでで result["stones_for_user"] = main + sub に差し替え済みとする
+
+        # 3-A) オラクルカード情報
         result['oracle_card'] = {
             'name': card['name'],
             'meaning': meaning,
             'is_upright': is_upright,
             'image_url': card_image_url
         }
+
+        # 3-B) 石画像プロンプトは「最終決定済みstones_for_user」から作る
+        stone_names_ja = ", ".join([s["name"] for s in result["stones_for_user"]])
+        stones_prompt = (
+            f"gemstone bracelet design, {stone_names_ja}, crystal photography, "
+            "soft lighting, white background, high quality, 8k"
+        )
+        stones_image_url = (
+            f"https://image.pollinations.ai/prompt/"
+            f"{stones_prompt.replace(' ', '%20')}?width=600&height=400&seed={random.randint(0,9999)}"
+        )
 
         result['stones_image_url'] = stones_image_url
         result['phase'] = 'stones_only'  # フロント側で判別用
