@@ -9,6 +9,7 @@
         href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Sans+JP:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
     <title>星の羅針盤「あとらす」</title>
@@ -52,7 +53,6 @@
             padding: 0;
             overflow: hidden;
         }
-
 
         body {
             background: #FFF;
@@ -327,13 +327,10 @@
             transition: opacity 1.2s ease;
             position: absolute;
             inset: 0;
-
             background-image: url("/res/img/background.png");
             background-repeat: no-repeat;
-
             background-position: center bottom;
             background-size: cover;
-
             pointer-events: none;
             z-index: 1;
         }
@@ -367,9 +364,7 @@
         let selectedMode = null;
         let messageQueue = Promise.resolve();
         function setProgress(step, total, label) {
-
             const el = document.getElementById("progressBar");
-
             el.innerHTML = `
     STEP ${step} / ${total}<br>
     ${label}
@@ -378,7 +373,6 @@
         function getGreetingMessage() {
             const hour = new Date().getHours();
             const nameForDisplay = getUserNameForDisplay();
-
             if (hour >= 5 && hour < 11) {
                 return `おはようございます。星の羅針盤「あとらす」です。\n\n今の気分や、ちょっと気になっていることがあれば、ここで整理してみませんか？\nあなたのお話と星の流れをもとに、今のあなたに合いそうな石や過ごし方のヒントをお伝えします。`;
             } else if (hour >= 11 && hour < 17) {
@@ -393,17 +387,13 @@
         }
         function renderMessage(text, isUser = false) {
             return new Promise((resolve) => {
-
                 const box = document.getElementById('chatBox');
                 const div = document.createElement('div');
-
                 div.className = `msg ${isUser ? 'user' : 'bot'}`;
                 box.appendChild(div);
-
                 const formatted = formatText(
                     text.replace(/\n+/g, '<br>').replace(/(<br>)+/g, '<br><br>')
                 );
-
                 // ユーザーは即表示
                 if (isUser) {
                     div.innerHTML = formatted;
@@ -411,7 +401,6 @@
                     resolve();
                     return;
                 }
-
                 // botはタイプ表示
                 typeText(div, formatted, 40).then(() => {
                     scrollChatToBottom();
@@ -421,13 +410,11 @@
         }
         function formatText(text) {
             if (!text) return '';
-
             // 1段階だけ HTML エスケープを戻す
             const decoded = text
                 .replace(/&lt;/g, '<')
                 .replace(/&gt;/g, '>')
                 .replace(/&amp;/g, '&');
-
             // もしまだ ** ... ** が使われているケースも残したいなら、ここで変換
             return decoded.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         }
@@ -440,9 +427,7 @@
         }
         function stepModeSelect() {
             userState = 'mode_select';
-
             addMsg('今日はどちらにしますか？', false);
-
             setInputArea(`
     <button class="btn" onclick="selectMode('divination')">
       ✨ 導きの石を診断する
@@ -455,10 +440,8 @@
     </button>
   `);
         }
-
         function selectMode(mode) {
             selectedMode = mode;
-
             if (mode === 'today_fortune') {
                 addMsg('今日の運勢を診断する', true);
                 stepTodayFortune();          // 今日の運勢 → テーマへ流す関数
@@ -470,7 +453,6 @@
                 stepStoneSelectMethod();     // 既存
             }
         }
-
         async function stepTodayFortune() {
             const birth = formData.birth || {};
             selectedMode = 'today_fortune';
@@ -480,21 +462,16 @@
             );
             showAstrologicalInfoForm();
         }
-
-
         function submitTodayComment() {
             const textarea = document.getElementById('todayComment');
             const comment = (textarea && textarea.value.trim()) || '';
-
             if (comment) {
                 // ユーザー発話として表示
                 addMsg(comment, true);
                 // プロフィールに保存しておく（問題文などと合わせて後でAPIに渡せる）
                 formData.today_comment = comment;
             }
-
             clearInputArea();
-
             // いつものテーマ選択へ
             addMsg(
                 'ありがとうございます。\nでは、この流れを踏まえて、今日はどんなテーマについて詳しく見ていきましょうか？',
@@ -502,18 +479,14 @@
             );
             stepConcerns();
         }
-
-
         function stepDivinationIntro() {
             const text = [
                 "まずは、今のあなたについて少しだけ教えてください。",
                 "はっきりした悩みがなくても大丈夫です。なんとなく気になっていることや、こうなれたらいいなと思うことがあれば、そのままの言葉で書いてください。",
             ].join("\n\n");
             addMsg(text, false);
-
             showAstrologicalInfoForm();
         }
-
         function stepAstrologicalInfo() {
             addMsg('進める', true);
             const hasSavedInfo = formData.gender && formData.birth && formData.birth.date;
@@ -531,7 +504,6 @@
                 `出生時間：${birth.time || '未設定'}`,
                 `出生地：${birth.place || '未設定'}`
             ].join('\n');
-
             const text = [
                 '診断に使うあなたのプロフィールです。',
                 '',
@@ -539,16 +511,12 @@
                 '',
                 'この情報を使いますか？ それとも修正しますか？'
             ].join('\n');
-
             addMsg(text, false);
-
             setInputArea(`
         <button class="btn" onclick="continueWithSavedInfo()">この情報を使う</button>
         <button class="btn btn-secondary" onclick="modifyAstrologicalInfo()">修正する</button>
     `);
         }
-
-
         function continueWithSavedInfo() {
             addMsg('わかりました。この情報で進めます。', true);
             stepConcerns();
@@ -560,18 +528,14 @@
         function showAstrologicalInfoForm() {
             setProgress(1, 4, "プロフィール入力");
             addMsg('診断に必要な情報をお聞きします。', false);
-
             const gender = formData.gender || '';
             const birth = formData.birth || {};
             const savedDate = birth.date || '';
             const savedTime = birth.time || '';
             const savedPlace = birth.place || '';
-
             // ★ 追加：名前の既存値（なければ空文字）
             const savedName = formData.name || '';
-
             userState = 'astrological_info';
-
             setInputArea(`
         <div class="input-field">
             <label>お名前（ニックネーム）</label>
@@ -599,7 +563,6 @@
         </div>
         <button class="btn" onclick="nextStep()">次へ</button>
     `);
-
             flatpickr("#birthDate", {
                 locale: "ja",
                 dateFormat: "Y-m-d",
@@ -616,16 +579,12 @@
             const date = document.getElementById('birthDate').value;
             const time = document.getElementById('birthTime').value;
             const place = document.getElementById('birthPlace').value;
-
             if (!date) {
                 addMsg('生年月日は必ず入力してください。', false);
                 return;
             }
-
             formData.birth = { date, time, place };
-
             addMsg('わかりました。この情報で星を見ていきますね。', true);
-
             // もし「今日の運勢」から来ていたなら、そこに戻す
             if (selectedMode === 'today_ai') {
                 stepTodayFortune();
@@ -718,9 +677,7 @@
                 `${nameForDisplay}がいま、特に気になっているテーマを教えてください。`,
                 '複数選んでも大丈夫です。'
             ].join('\n\n');
-
             addMsg(text, false);
-
             userState = 'concerns';
             setInputArea(`
         <div class="btn-group">
@@ -751,16 +708,12 @@
                 addMsg('少なくとも1つ選んでください。', false);
                 return;
             }
-
             addMsg(formData.concerns.join('、'), true);
-
             const text = [
                 "具体的な状況やお気持ちを、書ける範囲で大丈夫なので教えてください。",
                 "うまくまとまっていなくても大丈夫です。「最近なんとなく気分が落ちやすい」「将来の方向性がぼんやりしている」など、一言でもかまいません。",
             ].join("\n\n");
             addMsg(text, false);
-
-
             userState = 'problem';
             setInputArea(`
         <div class="input-field">
@@ -769,36 +722,28 @@
         <button class="btn" onclick="executeDiagnose()">診断開始</button>
     `);
         }
-
         async function executeDiagnose() {
             setProgress(3, 4, "導きの石を選定");
             const nameForDisplay = getUserNameForDisplay();
             let problem = document.getElementById('problemText')?.value || '';
             const date = formData.birth?.date;
-
             if (!problem) {
                 problem = `具体的なご相談内容は書かれていないため、今の${nameForDisplay}の全体の流れや、これから大切にしたいテーマがわかるような全体運を中心に読み解いてください。`;
             }
-
             // ① ユーザーの入力をそのままユーザー吹き出しで表示
             addMsg(problem, true);
-
             formData.problem = problem;
-
             if (!date) {
                 addMsg('生年月日は必須です', false);
                 return;
             }
-
             // ② 悩みの確認＋診断開始メッセージ（bot側）
             const confirmText = [
                 `わかりました。ありがとうございます。`,
                 "この内容で、星と石の流れを読み解いていきます。少しだけお待ちくださいね。"
             ].join("\n");
-
             // ③ ローディング表示〜診断API呼び出しはそのまま
             await addMsg(confirmText, false);
-
             // ローディング表示
             setInputArea(`
     <div class="loading">
@@ -808,7 +753,8 @@
   `);
             const thinkingTimer = setInterval(rotateThinking, 2000);
             try {
-                const res = await fetch(`/api/diagnose`, {
+                formData.line_user_id = lineUserId;
+                fetch(`/api/diagnose`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(formData)
@@ -836,42 +782,28 @@
             "あなたに合う石を探しています…",
             "ブレスレットの構成を考えています…"
         ];
-
         let thinkingIndex = 0;
-
         function rotateThinking() {
-
             const el = document.getElementById("thinkingText");
             if (!el) return;
-
             thinkingIndex = (thinkingIndex + 1) % thinkingMessages.length;
-
             el.textContent = thinkingMessages[thinkingIndex];
-
         }
         async function showOracleCard(card) {
-
             await addMsg("カードをシャッフルしています…", false);
-
             await new Promise(r => setTimeout(r, 1200));
-
             await addMsg("1枚引きます…", false);
-
             await new Promise(r => setTimeout(r, 1000));
-
             const cardHtml = `
  <div class="msg bot">
    <div class="result-section" style="text-align:center;">
      <h3>オラクルカード</h3>
-
      <img src="${card.image_url}" 
           style="width:200px;border-radius:12px;margin:12px 0;">
-
      <p>
        ${card.name}
        ${card.is_upright ? "（正位置）" : "（逆位置）"}
      </p>
-
    </div>
  </div>
  `;
@@ -885,9 +817,7 @@
             const nameForDisplay = getUserNameForDisplay();
             const stoneName = result.stone_name ||
                 (result.stones_for_user?.[0]?.name || `あなたの石`);
-
             const chatBox = document.getElementById('chatBox');
-
             const sections = [
                 {
                     key: 'destiny_map',
@@ -925,15 +855,12 @@
                     lead: `最後に、「これらの石たちが今のあなたをどう支えてくれるのか」をまとめてお伝えします。`
                 },
             ].filter(sec => sec.text);
-
             let currentIndex = 0;
-
             function typeIntoElement(element, rawText, speed = 20) {
                 return new Promise((resolve) => {
                     const html = formatText(rawText);
                     let i = 0;
                     element.innerHTML = '';
-
                     function step() {
                         if (i < html.length) {
                             element.innerHTML = html.slice(0, i + 1);
@@ -947,7 +874,6 @@
                     step();
                 });
             }
-
             async function showCurrentSection() {
                 // 全セクション読み終えたら → ブレスレット誘導へ
                 if (currentIndex >= sections.length) {
@@ -962,7 +888,6 @@
                         ].join("\n"),
                         false
                     );
-
                     await addMsg(
                         [
                             "もしこの石たちと一緒に歩いてみたいと感じたなら、",
@@ -972,7 +897,6 @@
                         ].join("\n"),
                         false
                     );
-
                     setInputArea(`
     <button class="btn" onclick="stepOrderChoice()">
       💎 ブレスレットを見る
@@ -983,47 +907,34 @@
   `);
                     return;
                 }
-
-
                 const sec = sections[currentIndex];
                 const wrapper = document.createElement('div');
                 wrapper.className = 'msg bot';
                 const inner = document.createElement('div');
                 inner.className = 'result-section';
-
                 const h3 = document.createElement('h3');
                 h3.textContent = sec.title;
-
                 const p = document.createElement('p');
-
                 inner.appendChild(h3);
                 inner.appendChild(p);
                 wrapper.appendChild(inner);
                 chatBox.appendChild(wrapper);
                 scrollChatToBottom();
-
                 await typeIntoElement(p, sec.text, 20);
                 // エレメント診断のあとにカードを引く
                 if (sec.key === "element_diagnosis") {
-
                     await showOracleCard(result.oracle_card);
-
                     const wrapper = document.createElement('div');
                     wrapper.className = 'msg bot';
-
                     const inner = document.createElement('div');
                     inner.className = 'result-section';
-
                     const h3 = document.createElement('h3');
                     h3.textContent = "オラクルからのメッセージ";
-
                     const p2 = document.createElement('p');
-
                     inner.appendChild(h3);
                     inner.appendChild(p2);
                     wrapper.appendChild(inner);
                     chatBox.appendChild(wrapper);
-
                     await typeIntoElement(p2, result.oracle_message, 20);
                 }
                 const isLast = (currentIndex === sections.length - 1);
@@ -1033,35 +944,23 @@
       </button>
     `);
             }
-
             window.showNextSection = async function () {
-
                 const isLast = (currentIndex === sections.length - 1);
                 const label = isLast
                     ? '最後のメッセージまで読む'
                     : '次のメッセージを読む';
-
                 await addMsg(label, true);
-
                 const next = sections[currentIndex + 1];
-
                 if (next && next.lead) {
                     await addMsg(next.lead, false);
                 }
-
                 currentIndex += 1;
-
                 showCurrentSection();
             };
-
-
             showCurrentSection();
         }
-
-
         function stepOrderChoice() {
             const nameForDisplay = getUserNameForDisplay();
-
             addMsg(
                 [
                     `${nameForDisplay ? nameForDisplay + "さん、" : ""}ここからは、今日のメッセージで浮かび上がったテーマを、`,
@@ -1075,7 +974,6 @@
                 ].join("\n"),
                 false
             );
-
             setInputArea(`
     <button class="btn" onclick="selectOrderType('custom')">
       ✨ この石たちで、今の自分に合わせたブレスレットを組んでみる
@@ -1091,16 +989,13 @@
                 stepBraceletSize();
             } else {
                 addMsg('ネットショップから選ぶ', true);
-
                 // ★ ネットショップへ行く前に一言伝える
                 addMsg(
                     '今の診断結果に関連するブレスレットを、ネットショップでお見せしますね。',
                     false
                 );
-
                 const method = formData.stone_method;   // 'color' | 'effect' | 'zodiac' | 'moon'
                 const option = formData.stone_option;   // 各オプション名
-
                 const categoryUrlMap = {
                     color: {
                         '紫': 'https://spicastar.info/atlas/shop/product-category/color-purple/',
@@ -1153,15 +1048,12 @@
                         '12月': 'https://spicastar.info/atlas/shop/product-category/moon-december/'
                     }
                 };
-
                 let url = 'https://spicastar.info/atlas/shop/';
-
                 if (method && option &&
                     categoryUrlMap[method] &&
                     categoryUrlMap[method][option]
                 ) {
                     url = categoryUrlMap[method][option];
-
                     const params = new URLSearchParams({
                         from: 'atlas-chat',
                         method: method,
@@ -1169,13 +1061,11 @@
                     });
                     url = `${url}?${params.toString()}`;
                 }
-
                 window.location.href = url;
             }
         }
         function stepBraceletSize() {
             const nameForDisplay = getUserNameForDisplay();
-
             addMsg(
                 [
                     `${nameForDisplay ? nameForDisplay + "さん、" : ""}ここからは、実際に身につけるときのことをイメージしながら、`,
@@ -1190,10 +1080,8 @@
                 ].join("\n"),
                 false
             );
-
             const savedWrist = formData.wrist_inner_cm || 16.0;
             const savedType = formData.bracelet_type || 'birth_top_element_side';
-
             setInputArea(`
     <div class="input-field">
       <label>手首の内径（cm）</label>
@@ -1218,7 +1106,6 @@
         </button>
       </div>
     </div>
-
     <div class="input-field">
       <label>ブレスレットのタイプ</label>
       <div class="btn-group">
@@ -1236,13 +1123,11 @@
         </button>
       </div>
     </div>
-
     <button class="btn" onclick="buildBracelet()">
       ✨ この条件で、あなたのブレスレットのデザインを見る
     </button>
   `);
         }
-
         function selectWristSize(size, el) {
             formData.wrist_inner_cm = size;
             el.parentElement.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
@@ -1253,7 +1138,6 @@
             el.parentElement.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
             el.classList.add('active');
         }
-
         function selectDesign(style, el) {
             formData.design_style = style;
             document.querySelectorAll('.input-field:last-child .btn-group .btn-toggle').forEach(b => b.classList.remove('active'));
@@ -1262,17 +1146,14 @@
         async function buildBracelet() {
             const wrist = formData.wrist_inner_cm || 16.0;
             const designStyle = formData.bracelet_type || 'birth_top_element_side';
-
             addMsg(`手首内径: ${wrist}cm / タイプ: ${designStyle}`, true);
             saveProfileToLocalStorage();
-
             setInputArea(`
     <div class="loading">
       <div class="spinner"></div>
       <p>ブレスレットをデザインしています... 💎</p>
     </div>
   `);
-
             try {
                 const res = await fetch(`/api/build-bracelet`, {
                     method: 'POST',
@@ -1309,31 +1190,24 @@
                 clearInputArea();
             }
         }
-
         function displayBraceletResult(data) {
             setProgress(4, 4, "ブレスレット生成");
             const nameForDisplay = getUserNameForDisplay();
             clearInputArea();
-
             const chatBox = document.getElementById('chatBox');
-
             const section = document.createElement('div');
             section.className = 'result-section';
-
             let html = `<h3>💎 ${nameForDisplay}を導くブレスレット</h3>` + `<p style="font-size:18px;font-weight:bold;">
 ${data.product_name}
 </p>`;
-
             // 商品名
             if (data.name || data.bracelet_name) {
                 html += `<p style="font-weight:bold;font-size:16px;margin-top:6px;">${data.name || data.bracelet_name}</p>`;
             }
-
             // 英語名
             if (data.name_en || data.bracelet_name_en) {
                 html += `<p style="font-size:12px;opacity:0.7;">${data.name_en || data.bracelet_name_en}</p>`;
             }
-
             const img = data.image_url || data.image;
             if (img) {
                 html += `
@@ -1343,35 +1217,25 @@ ${data.product_name}
         >
     `;
             }
-
             // デザイン説明
             if (data.design_text) {
                 html += `<p>${formatText(data.design_text)}</p>`;
             }
-
             // 石構成
             if (data.stone_counts) {
                 html += `<p style="margin-top:12px;font-size:13px;">`;
-
                 Object.entries(data.stone_counts).forEach(([stone, count]) => {
                     html += `${stone} × ${count}<br>`;
                 });
-
                 html += `</p>`;
             }
-
             section.innerHTML = html;
-
             chatBox.appendChild(section);
-
             const textContainer = section.querySelector("p");
-
             if (textContainer) {
                 typeIntoElement(textContainer, textContainer.innerHTML, 20);
             }
-
             scrollChatToBottom();
-
             // 注文ボタン
             setInputArea(`
         <button class="btn" onclick="goToProduct()">
@@ -1383,18 +1247,14 @@ ${data.product_name}
     `);
         }
         function goToProduct() {
-
             const slug = divinationResult.product_slug || divinationResult.bracelet?.product_slug;
-
             if (!slug) {
                 addMsg("商品ページが見つかりませんでした", false);
                 return;
             }
-
-            const url = `https://spicastar.info/atlas/shop/product/${slug}/`;
-
+            const diagnosisId = divinationResult.diagnosis_id
+            const url = `https://spicastar.info/atlas/shop/product/${slug}/` + "?d=" + diagnosisId;
             window.location.href = url;
-
         }
         function confirmOrder() {
             const diagnosisId = window.diagnosisId;
@@ -1402,7 +1262,6 @@ ${data.product_name}
             const problem = formData.problem || '';
             const oracleCard = divinationResult?.oraclecardname || '';
             const name = getUserNameForDisplay();
-
             const lines = [
                 'この内容でブレスレットを注文したいです。',
                 diagnosisId ? `診断ID: ${diagnosisId}` : '',
@@ -1410,19 +1269,15 @@ ${data.product_name}
                 problem ? `お悩み: ${problem}` : '',
                 oracleCard ? `オラクルカード: ${oracleCard}` : ''
             ].filter(Boolean);
-
             const text = lines.join('\n');
             const encoded = encodeURIComponent(text);
-
             // ここはあとらすの公式アカウントIDに差し替え
             window.location.href = `https://line.me/R/oaMessage/@586spjck/?${encoded}`;
         }
-
         function restartFromBeginning() {
             const box = document.getElementById('chatBox');
             box.innerHTML = '';
             addMsg(getGreetingMessage(), false);
-
             const saved = localStorage.getItem('hoshin-profile');
             if (saved) {
                 formData = JSON.parse(saved);
@@ -1432,8 +1287,6 @@ ${data.product_name}
             }
             stepModeSelect();
         }
-
-
         function reuseProfile() {
             console.log('Reusing profile with formData:', formData);
             stepModeSelect();
@@ -1445,7 +1298,6 @@ ${data.product_name}
             addMsg(getGreetingMessage(), false);
             stepModeSelect();
         }
-
         function saveProfileToLocalStorage() {
             const profile = {
                 name: formData.name,                     // ★ 追加
@@ -1456,7 +1308,6 @@ ${data.product_name}
                 bracelet_type: formData.bracelet_type,
             };
             localStorage.setItem('hoshin-profile', JSON.stringify(profile));
-
             if (userId) {
                 fetch('/api/profile', {
                     method: 'POST',
@@ -1465,7 +1316,6 @@ ${data.product_name}
                 }).catch(() => { });
             }
         }
-
         function getUserNameForDisplay() {
             return (formData.name && formData.name.trim())
                 ? `${formData.name.trim()}さん`
@@ -1477,7 +1327,6 @@ ${data.product_name}
                 const date = document.getElementById('birthDate')?.value;
                 const time = document.getElementById('birthTime')?.value || '';
                 const place = document.getElementById('birthPlace')?.value || '';
-
                 if (!formData.gender) {
                     addMsg('性別を選んでください', false);
                     return;
@@ -1486,23 +1335,18 @@ ${data.product_name}
                     addMsg('生年月日は必須です', false);
                     return;
                 }
-
                 formData.birth = { date, time, place };
                 formData.name = name;
                 console.log('Saved astrological info:', formData.birth);
                 saveProfileToLocalStorage();
-
                 clearInputArea();
-
                 // ★ ここでモードを見て分岐
                 if (selectedMode === 'today_fortune') {
                     runTodayFortune();   // 今日の運勢を実行する関数へ
                 } else {
                     stepConcerns();      // これまで通り通常の占いフローへ
                 }
-
                 return;
-
                 // それ以外の userState の処理は既存のまま
             } else if (userState === 'concerns') {
                 stepProblem();
@@ -1510,12 +1354,10 @@ ${data.product_name}
         }
         async function runTodayFortune() {
             const birth = formData.birth || {};
-
             await addMsg(
                 '生まれた時間と場所も含めて、AIに今日の運勢を聞いてみますね。',
                 false
             );
-
             // 診断中の画面を表示
             setInputArea(`
     <div class="loading">
@@ -1523,7 +1365,6 @@ ${data.product_name}
       <p>今日の運勢を読み解いています... 🔮</p>
     </div>
   `);
-
             try {
                 const res = await fetch('/api/today-fortune', {
                     method: 'POST',
@@ -1533,9 +1374,7 @@ ${data.product_name}
                         birth: birth
                     })
                 });
-
                 const json = await res.json();
-
                 // 1) API呼び出しレベルの失敗（HTTPステータス）
                 if (!res.ok) {
                     clearInputArea();
@@ -1550,7 +1389,6 @@ ${data.product_name}
   `);
                     return;
                 }
-
                 // 2) サーバー側が error を返してきた場合
                 if (json.error) {
                     clearInputArea();
@@ -1565,24 +1403,18 @@ ${data.product_name}
   `);
                     return;
                 }
-
                 // 3) 正常系：メッセージ抽出
                 const rawMessage =
                     json.message ||
                     '今日は、自分のペースを大切に過ごすと良さそうな日です。';
-
                 const fortuneText = extractFortuneFromMessage(rawMessage);
-
                 // 診断完了 → 入力エリアクリア
                 clearInputArea();
-
                 await addMsg(`【今日の運勢】\n${fortuneText}`, false);
-
                 await addMsg(
                     'この流れを踏まえて、あなたの導きの天然石を診断してみますか？',
                     false
                 );
-
                 setInputArea(`
   <button class="btn" onclick="selectMode('divination')">
     💎 導きの天然石を診断する
@@ -1604,13 +1436,11 @@ ${data.product_name}
         }
         function extractFortuneFromMessage(raw) {
             if (!raw) return '';
-
             // ```json ～ ``` を取り除く
             const cleaned = raw
                 .replace(/```json/g, '')
                 .replace(/```/g, '')
                 .trim();
-
             try {
                 const obj = JSON.parse(cleaned);
                 // { "鑑定結果": "..." } 想定
@@ -1620,8 +1450,6 @@ ${data.product_name}
                 return cleaned;
             }
         }
-
-
         function scrollChatToBottom() {
             const box = document.getElementById('chatBox');
             if (!box) return;
@@ -1632,7 +1460,6 @@ ${data.product_name}
                 const html = formatText(text); // **〜** を <strong>〜</strong> に変換
                 let i = 0;
                 element.innerHTML = '';
-
                 function type() {
                     if (i < html.length) {
                         element.innerHTML = html.slice(0, i + 1);
@@ -1646,7 +1473,6 @@ ${data.product_name}
                 type();
             });
         }
-
         function getCookie(name) {
             const value = `; ${document.cookie}`;
             const parts = value.split(`; ${name}=`);
@@ -1655,14 +1481,12 @@ ${data.product_name}
             }
             return null;
         }
-
         function setCookie(name, value, days = 365) {
             const d = new Date();
             d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
             const expires = "expires=" + d.toUTCString();
             document.cookie = `${name}=${value};${expires};path=/`;
         }
-
         function generateUserId() {
             // 簡易 UUID でOK（将来差し替え前提）
             const s4 = () =>
@@ -1684,40 +1508,33 @@ ${data.product_name}
                 s4()
             );
         }
-
         let userId = null;
-
         // ★ ページ読み込み時は「アニメだけ」やる
         window.onload = function () {
+            window.addEventListener("load",fillOrderNote);
             const logoOverlay = document.getElementById('logoOverlay');
             const fortuneGirl = document.querySelector('.fortune-girl');
-
             // 1. ロゴをフェードイン
             setTimeout(() => {
                 if (!logoOverlay) return;
                 logoOverlay.style.pointerEvents = 'auto';
                 logoOverlay.classList.add('fade-in');
             }, 300);
-
             const logoDisplayTime = 1800; // ロゴが見えている時間
             const fadeDuration = 1200;   // CSS と合わせる
-
             // 2. ロゴ表示キープ → フェードアウト → 背景フェードイン → 会話開始
             setTimeout(() => {
                 if (!logoOverlay) {
                     initChatFlow(); // 安全策
                     return;
                 }
-
                 // ロゴをフェードアウト
                 logoOverlay.classList.remove('fade-in');
-
                 // ロゴが薄れてきたら背景フェードイン
                 setTimeout(() => {
                     if (fortuneGirl) {
                         fortuneGirl.classList.add('fade-in');
                     }
-
                     // 背景フェードイン完了後にロゴオーバーレイを無効化して会話スタート
                     setTimeout(() => {
                         logoOverlay.style.display = 'none';
@@ -1727,7 +1544,6 @@ ${data.product_name}
                 }, fadeDuration / 2);
             }, 300 + logoDisplayTime);
         };
-
         async function initChatFlow() {
             // 1) userId を cookie から読み込み or 新規発行
             userId = getCookie('hoshin_user_id');
@@ -1742,21 +1558,17 @@ ${data.product_name}
                     console.log('profile load error', e);
                 }
             }
-
             const box = document.getElementById('chatBox');
             box.innerHTML = '';
             await addMsg(getGreetingMessage(), false);
-
             // 3) ローカルのlocalStorageもあればマージ（任意）
             const saved = localStorage.getItem('hoshin-profile');
             if (saved) {
                 const localProfile = JSON.parse(saved);
                 formData = { ...localProfile, ...formData };
             }
-
             stepModeSelect();
         }
-
     </script>
     <script>
         const canvas = document.getElementById("starfield");
@@ -1796,6 +1608,28 @@ ${data.product_name}
             requestAnimationFrame(animate);
         }
         animate();
+    </script>
+    <script>
+        async function initLiff() {
+            await liff.init({
+                liffId: "2009078638-GZhFVgaz"
+            });
+            if (!liff.isLoggedIn()) {
+                liff.login();
+            }
+            const profile = await liff.getProfile();
+            const userId = profile.userId;
+            window.LINE_USER_ID = userId;
+        }
+        function fillOrderNote() {
+            const params = new URLSearchParams(window.location.search)
+            const diagnosisId = params.get("d")
+            if (!diagnosisId) return
+            const noteField = document.querySelector("#order_comments")
+            if (noteField) {
+                noteField.value = "diagnosis_id:" + diagnosisId
+            }
+        }
     </script>
 </body>
 

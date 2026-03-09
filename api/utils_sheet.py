@@ -1,31 +1,19 @@
 import os
 import json
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 
 # スコープはそのままでOK（必要に応じて調整）
-scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive.file",
-    "https://www.googleapis.com/auth/drive",
+PROFILE_SHEET_NAME = "profiles"
+LOG_SHEET_NAME = "diagnosis_logs"
+ORDER_SHEET_NAME = "orders"
+SCOPES = [
+ "https://www.googleapis.com/auth/spreadsheets",
+ "https://www.googleapis.com/auth/drive"
 ]
-
-# ここを修正
-service_account_info = json.loads(os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"])
-creds = ServiceAccountCredentials.from_json_keyfile_dict(
-    service_account_info, scope
-)
-client = gspread.authorize(creds)
-
-
-PROFILE_SHEET_KEY = "スプレッドシートID_profiles"
-LOG_SHEET_KEY = "スプレッドシートID_logs"
 # ==========================
 # Client生成
 # ==========================
-
-
 def get_client():
     service_account_info = json.loads(
         os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
@@ -37,19 +25,41 @@ def get_client():
     return gspread.authorize(creds)
 
 
-def get_sheet():
+def get_log_sheet():
     client = get_client()
     sheet = client.open_by_key(
         os.environ["GOOGLE_SHEET_ID"]
-    ).sheet1
+    ).worksheet(LOG_SHEET_NAME)
     return sheet
 
+def get_order_sheet():
+    client = get_client()
+    sh = client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
+    return sh.worksheet(ORDER_SHEET_NAME)
 
+
+def add_order(data: dict):
+    sheet = get_order_sheet()
+
+    row = [
+        data.get("order_id", ""),
+        data.get("diagnosis_id", ""),
+        data.get("user_line_id", ""),
+        data.get("product_slug", ""),
+        data.get("stones", ""),
+        data.get("wrist_inner_cm", ""),
+        data.get("bead_size_mm", ""),
+        data.get("bracelet_type", ""),
+        data.get("order_status", "pending"),
+        data.get("created_at", "")
+    ]
+
+    sheet.append_row(row, table_range="A1")
 # ==========================
 # 追加保存
 # ==========================
 def add_diagnosis(data: dict):
-    sheet = get_sheet()
+    sheet = get_log_sheet()
 
     row = [
         data.get("diagnosis_id", ""),
@@ -58,24 +68,72 @@ def add_diagnosis(data: dict):
         data.get("element_lack", ""),
         data.get("horoscope_full", ""),
         data.get("past", ""),
-        data.get("present", ""),
-        data.get("future", ""),
+        data.get("present_future", ""),
         data.get("element_detail", ""),
         data.get("oracle_name", ""),
         data.get("oracle_position", ""),
+        data.get("stones", ""),
         data.get("product_slug", ""),
-        "",          # user_line_id
+        data.get("user_line_id",""),          # user_line_id
         False        # purchased
     ]
 
-    sheet.append_row(row, value_input_option="USER_ENTERED")
+    sheet.append_row(row, table_range="A1")
 
+def update_diagnosis(diagnosis_id: str, stones: str, product_slug: str):
+    sheet = get_log_sheet()
+
+    id_column = sheet.col_values(1)
+
+    if diagnosis_id not in id_column:
+        return
+
+    row = id_column.index(diagnosis_id) + 1
+
+    headers = sheet.row_values(1)
+
+    stones_col = headers.index("stones") + 1
+    slug_col = headers.index("product_slug") + 1
+
+    sheet.update_cell(row, stones_col, stones)
+    sheet.update_cell(row, slug_col, product_slug)
+
+def mark_purchased(diagnosis_id: str):
+
+    sheet = get_log_sheet()
+
+    id_column = sheet.col_values(1)
+
+    if diagnosis_id not in id_column:
+        return
+
+    row = id_column.index(diagnosis_id) + 1
+
+    header = sheet.row_values(1)
+    col_index = header.index("purchased") + 1
+
+    sheet.update_cell(row, col_index, True)
+
+def format_stones(stone_counts: dict):
+
+    """
+    {"アメジスト":2,"ローズ":14}
+    ↓
+    アメジスト×2,ローズ×14
+    """
+
+    parts = []
+
+    for name, count in stone_counts.items():
+        parts.append(f"{name}×{count}")
+
+    return ",".join(parts)
 
 # ==========================
 # 1件取得（高速版）
 # ==========================
 def get_diagnosis(diagnosis_id: str):
-    sheet = get_sheet()
+    sheet = get_log_sheet()
 
     # 全行取得せず、1列目のみ取得
     id_column = sheet.col_values(1)
@@ -93,10 +151,10 @@ def get_diagnosis(diagnosis_id: str):
 
 def get_profile_sheet():
     client = get_client()
-    # スプレッドシート内の「プロフィール」シートを前提
-    return client.open_by_key(
-        os.environ["GOOGLE_SHEET_ID"]
-    ).worksheet("プロフィール")
+    sh = client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
+    ws = sh.worksheet(PROFILE_SHEET_NAME)
+
+    return ws
 
 
 def upsert_profile(profile: dict):
@@ -115,12 +173,13 @@ def upsert_profile(profile: dict):
       "bracelet_type": "birth_top_element_side",
     }
     """
-    sh = gc.open_by_key(PROFILE_SHEET_KEY)
-    ws = sh.worksheet("profiles")  # シート名は profiles 想定
+    client = get_client()
+    sh = client.open_by_key(os.environ["GOOGLE_SHEET_ID"])
+    ws = sh.worksheet(PROFILE_SHEET_NAME)
 
     # 1行目ヘッダー → 列名と列番号の対応を作る
     header = ws.row_values(1)
-    col_index = {name: i + 1 for i, name in enumerate(header)}  # 1始まり
+    col_index = {name: i + 1 for i, name in enumerate(header)}
 
     user_id = profile["user_id"]
 
@@ -132,12 +191,11 @@ def upsert_profile(profile: dict):
 
     # 1. user_id で既存行を探す（なければ新規）
     try:
-        cell = ws.find(user_id)  # 見つからなければ例外
+        cell = ws.find(user_id)
         row = cell.row
     except Exception:
-        row = ws.row_count + 1  # 次の空行に新規作成
+        row = len(ws.get_all_values()) + 1
 
-    # 2. 必ず書き込み（存在すれば更新、なければ新規）
     def set_cell(col_name, value):
         if col_name not in col_index:
             return
@@ -152,8 +210,6 @@ def upsert_profile(profile: dict):
     set_cell("wrist_inner_cm", profile.get("wrist_inner_cm", ""))
     set_cell("bead_size_mm", profile.get("bead_size_mm", ""))
     set_cell("bracelet_type", profile.get("bracelet_type", ""))
-
-    wb.save(PROFILE_FILE)
 
 
 def get_profile(user_id: str):

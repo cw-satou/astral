@@ -12,7 +12,6 @@ app = Flask(__name__, static_folder='public', static_url_path='')
 
 @app.route('/api/diagnose', methods=['POST'])
 def route_diagnose():
-    """占い処理エンドポイント"""
     return diagnose()
 
 @app.route('/api/build-bracelet', methods=['POST'])

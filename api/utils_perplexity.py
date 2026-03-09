@@ -311,6 +311,22 @@ def generate_bracelet_name_en(element, theme):
 
     return f"{el} {th}"
 
+def layout_to_prompt(layout):
+
+    parts = []
+
+    for bead in layout:
+
+        if bead == "spacer2":
+            parts.append("small gold spacer bead")
+
+        elif bead == "spacer5":
+            parts.append("gold accent spacer bead")
+
+        else:
+            parts.append(f"{bead} gemstone bead")
+
+    return ", ".join(parts)
 
 def generate_bracelet_image(layout):
 
@@ -319,28 +335,32 @@ def generate_bracelet_image(layout):
     if key in IMAGE_CACHE:
         return IMAGE_CACHE[key]
 
-    stones = ", ".join(layout)
+    stones = layout_to_prompt(layout)
 
     prompt = f"""
 realistic gemstone bracelet jewelry photography
-beads: {stones}
-natural crystal bracelet
+beads sequence: {stones}
+symmetrical bracelet
+round beads
 studio lighting
 white background
 product photo
 """
+    try:
+        resp = client.chat.completions.create(
+            model="nanobanana2",
+            messages=[
+                {"role": "system", "content": "You generate product image prompts."},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.4
+        )
 
-    resp = client.chat.completions.create(
-        model="nanobanana2",
-        messages=[
-            {"role": "system", "content": "You generate product image prompts."},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0.4
-    )
-
-    image_url = resp.choices[0].message.content
-
+        image_url = resp.choices[0].message.content
+        IMAGE_CACHE[key] = image_url
+    except Exception as e:
+        print(f"Image generation error: {e}")
+        image_url = ""
     return image_url
 
 
@@ -717,8 +737,7 @@ def generate_bracelet_reading(user_input: dict) -> dict:
             fallback = {
                 "destiny_map": "",
                 "past": "",
-                "present": "",
-                "future": "",
+                "present_future": "",
                 "element_diagnosis": "",
                 "oracle_message": "",
                 "bracelet_proposal": "",

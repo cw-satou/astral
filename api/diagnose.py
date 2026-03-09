@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from api.utils_perplexity import generate_bracelet_reading
 from api.utils_order import build_order_summary
-from api.utils_sheet import add_diagnosis
+from api.utils_sheet import add_diagnosis, format_stones, update_diagnosis
 from datetime import datetime
 from datetime import datetime
 import uuid
@@ -11,7 +11,7 @@ import sys
 import time
 from api.utils_perplexity import generate_today_fortune  # 新しく作る
 
-def diagnose():
+def diagnose(line_user_id=None):
     """
     第1フェーズ：不足エレメントと、そのエレメントを補う代表石1種類を返す
     """
@@ -22,6 +22,8 @@ def diagnose():
         data = request.get_json(force=True, silent=True)
         if not data:
             return jsonify({"error": "Empty request body"}), 400
+
+        line_user_id = data.get("line_user_id")
 
         print(f"Received data: {data}")
 
@@ -51,37 +53,34 @@ def diagnose():
         }]
 
         # 5. 診断ID生成
-        diagnosis_id = str(uuid.uuid4())
+        diagnosis_id = data.get("diagnosis_id")
+
+        if not diagnosis_id:
+            return jsonify({"error": "diagnosis_id required"}), 400
         created_at = datetime.utcnow().isoformat()
 
-        # 6. Sheets保存用（ログ）
-        full_result = {
+        # 6. 結果をスプレッドシートに保存
+        log_data = {
             "diagnosis_id": diagnosis_id,
             "created_at": created_at,
+
             "stone_name": stone_name,
             "element_lack": element_lack,
 
-            "destiny_map": result.get("destiny_map", ""),
-            "past": result.get("past", ""),
-            "present": result.get("present", ""),
-            "future": result.get("future", ""),
-            "element_diagnosis": result.get("element_diagnosis", ""),
-            "oracle_message": result.get("oracle_message", ""),
-            "bracelet_proposal": result.get("bracelet_proposal", ""),
-            "stone_support_message": result.get("stone_support_message", ""),
+            "horoscope_full": result.get("destiny_map",""),
+            "past": result.get("past",""),
+            "present_future": result.get("present_future",""),
+            "element_detail": result.get("element_diagnosis",""),
 
-            "oracle_name": result.get("oracle_card", {}).get("name", ""),
-            "oracle_position": (
-                "正位置" if result.get("oracle_card", {}).get(
-                    "is_upright") else "逆位置"
-            ),
+            "oracle_name": result.get("oracle_card", {}).get("name",""),
+            "oracle_position": result.get("oracle_card", {}).get("position",""),
+
+            "stones": "",
             "product_slug": "",
-        }
 
-        try:
-            add_diagnosis(full_result)
-        except Exception as sheet_err:
-            print("Sheet save error:", sheet_err)
+            "user_line_id": line_user_id
+        }
+        add_diagnosis(log_data)
 
         # 7. フロント向け返却（フル鑑定をそのまま渡す）
         full_response = {
@@ -89,6 +88,7 @@ def diagnose():
             **result,
 
             # そこにメタ情報を上書き・追加
+            "line_user_id": line_user_id,
             "diagnosis_id": diagnosis_id,
             "element_lack": element_lack,
             "stone_name": stone_name,
@@ -190,6 +190,13 @@ def build_bracelet():
         elapsed_time = time.time() - start_time
         print(f"Build bracelet finished in {elapsed_time:.2f} seconds.")
 
+        stone_counts = {s["name"]: s["count"] for s in stones}
+        stones_str = format_stones(stone_counts)
+        update_diagnosis(
+            diagnosis_id,
+            stones_str,
+            ""
+        )
         response_data = {
             "diagnosis_id": diagnosis_id,
             "phase": "bracelet_complete",
