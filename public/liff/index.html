@@ -1513,9 +1513,8 @@ ${data.product_name}
         // ★ ページ読み込み時は「アニメだけ」やる
         window.onload = async function () {
             try {
-                await initLiff().then(() => {
-                    fillOrderNote();
-                });
+                await initLiff();
+                fillOrderNote();
             } catch (e) {
                 console.log("LIFF init error", e);
             }
