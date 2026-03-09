@@ -890,42 +890,44 @@
 
             async function showCurrentSection() {
                 // 全セクション読み終えたら → ブレスレット誘導へ
+                // 全セクション読み終えたら → ブレスレット誘導へ
                 if (currentIndex >= sections.length) {
                     await addMsg(
                         [
-                            "ここまで読んでくださってありがとうございます。",
+                            "ここまでじっくり読んでくださって、本当にありがとうございます。",
                             "",
-                            "この結果を読むだけでも、石たちのエネルギーは少しずつあなたに届き始めています。",
-                            "もし「実際に身につけてみたい」「お守りとしてそばに置いておきたい」と感じたら、",
-                            "今のあなたに合わせてブレスレットのかたちに整えることもできますよ。"
+                            "ここに書かれたメッセージは、どれも「今のあなたのためだけ」に集まってきた言葉たちです。",
+                            "画面の向こうで静かに並んでいる石たちも、",
+                            "もしあなたが望むなら、一緒に歩き出したいとそっと手を伸ばしてくれています。"
                         ].join("\n"),
                         false
                     );
 
                     await addMsg(
                         [
-                            "もちろん、このまま今日のメッセージを心に留めておくだけでも十分ですが、",
-                            "実際に石を身につけると、ふと目に入るたびに「今日の自分の軸」を思い出しやすくなります。",
+                            "もし少しでも胸のあたりがふっと温かくなったり、",
+                            "「この感覚をちゃんと形に残しておきたい」と感じたなら、",
+                            "それは、今回のブレスレットづくりのいちばん大切なサインです。",
                             "",
-                            "ここから先は、",
-                            "「今のあなたの手首サイズに合わせて」",
-                            "「今回選ばれた石たちを中心に」",
-                            "「普段の服装やシーンにもなじむように」",
-                            "あなたのブレスレットにデザインしていくステップです。"
+                            "もちろん、今日は読むだけにして、",
+                            "心の中だけで石たちとつながってみるのも素敵な選択です。",
+                            "ただ、今の自分をそっと支えてくれる“相棒”がほしいと感じているなら、",
+                            "この結果をもとに、あなたのための一本をデザインしていきましょう。"
                         ].join("\n"),
                         false
                     );
 
                     setInputArea(`
-        <button class="btn" onclick="stepOrderChoice()">
-          💎 この石たちでブレスレットのイメージを見てみる
-        </button>
-        <button class="btn btn-secondary" onclick="restartFromBeginning()">
-          🔄 今日は読むだけにして、もう一度占ってみる
-        </button>
-      `);
+    <button class="btn" onclick="stepOrderChoice()">
+      💎 今の自分に合わせたブレスレットのイメージを見てみる
+    </button>
+    <button class="btn btn-secondary" onclick="restartFromBeginning()">
+      🔄 今日は読むだけにして、もう一度占ってみる
+    </button>
+  `);
                     return;
                 }
+
 
                 const sec = sections[currentIndex];
 
@@ -976,15 +978,30 @@
 
 
         function stepOrderChoice() {
+            const nameForDisplay = getUserNameForDisplay();
+
             addMsg(
-                "この石を身につけるとしたら、どのようなかたちが今のあなたにしっくりきそうか教えてください。",
+                [
+                    `${nameForDisplay ? nameForDisplay + "さん、" : ""}ここからは、今日のメッセージで浮かび上がったテーマを、`,
+                    "実際に身につけられる一本のブレスレットとして形にしていくステップです。",
+                    "",
+                    "「ちゃんと自分の相棒としてそばに置きたい」と感じているなら、",
+                    "このままサイズやタイプを一緒に決めていきましょう。",
+                    "",
+                    "まずは、今回選ばれた石たちでデザインしたブレスレットのイメージを見て、",
+                    "今のあなたにしっくりくるかどうかを、ゆっくり確かめてみてください。"
+                ].join("\n"),
                 false
             );
 
             setInputArea(`
-        <button class="btn" onclick="selectOrderType('custom')">🎨 オーダーメイド（カスタマイズ）</button>
-        <button class="btn btn-secondary" onclick="selectOrderType('shop')">🛍️ ネットショップから選ぶ</button>
-    `);
+    <button class="btn" onclick="selectOrderType('custom')">
+      ✨ この石たちで、今の自分に合わせたブレスレットを組んでみる
+    </button>
+    <button class="btn btn-secondary" onclick="selectOrderType('shop')">
+      🛒 今日はお店のラインナップから近いデザインを探してみる
+    </button>
+  `);
         }
         function selectOrderType(type) {
             if (type === 'custom') {
@@ -1075,8 +1092,20 @@
             }
         }
         function stepBraceletSize() {
+            const nameForDisplay = getUserNameForDisplay();
+
             addMsg(
-                "ブレスレットのサイズとタイプを決めていきましょう。普段の服装や、着けたいシーンをなんとなく思い浮かべながら選んでみてください。手首の内径は実際には買って近いものをお選びください。※サイズのお直しが発生しないようにお間違えないようにご注意ください。",
+                [
+                    `${nameForDisplay ? nameForDisplay + "さん、" : ""}ここからは、実際に身につけるときのことをイメージしながら、`,
+                    "ブレスレットのサイズとタイプを決めていくステップです。",
+                    "",
+                    "ふだんの服装や、どんな場面でそっと支えてほしいかを思い浮かべながら、",
+                    "「いちばん自然に自分らしくいられそう」と感じるほうを選んでみてください。",
+                    "",
+                    "手首の内径は、今お使いのブレスレットやメジャーを目安に、",
+                    "できるだけ近いものをお選びください。",
+                    "あとからサイズ直しがいらないように、ここだけ少しだけ慎重に見てあげましょうね。"
+                ].join("\n"),
                 false
             );
 
@@ -1126,9 +1155,12 @@
       </div>
     </div>
 
-    <button class="btn" onclick="buildBracelet()">✨ この条件でブレスレットを作る</button>
+    <button class="btn" onclick="buildBracelet()">
+      ✨ この条件で、あなたのブレスレットのデザインを見る
+    </button>
   `);
         }
+
         function selectWristSize(size, el) {
             formData.wrist_inner_cm = size;
             el.parentElement.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('active'));
