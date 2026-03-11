@@ -13,11 +13,9 @@ app = Flask(__name__, static_folder='public', static_url_path='')
 
 @app.route('/api/diagnose', methods=['POST'])
 def route_diagnose():
-    data = request.get_json(force=True, silent=True) or {}
-    line_user_id = data.get("line_user_id")
-    return diagnose(data, line_user_id)
+    return diagnose();
 
-@app.route('/api/build-bracelet', methods=['POST'])
+app.route('/api/build-bracelet', methods=['POST'])
 def route_build_bracelet():
     """ブレスレット生成エンドポイント"""
     return build_bracelet()
