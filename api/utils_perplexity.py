@@ -674,12 +674,13 @@ def choose_sub_stones(main_stones):
 
 def generate_bracelet_reading(user_input: dict) -> dict:
     """ユーザー情報に基づき、オラクルカード・鑑定・石の提案を生成"""
+
     if not client:
         return {"error": "Perplexity API Key not configured"}
 
-    # 1. オラクルカード抽選（石を選ぶ + 正逆を決める）
+    # 1. オラクルカード抽選
     card = random.choice(CRYSTAL_ORACLE_CARDS)
-    is_upright = random.choice([True, False])  # 50%で正位置/逆位置
+    is_upright = random.choice([True, False])
     meaning = card['meaning_up'] if is_upright else card['meaning_rev']
 
     oracle_result = {
@@ -691,10 +692,6 @@ def generate_bracelet_reading(user_input: dict) -> dict:
     # 2. AI鑑定実行
     system_msg = SYSTEM_PROMPT
     user_msg = create_user_prompt(user_input, oracle_result)
-    print("=== SYSTEM PROMPT ===")
-    print(system_msg)
-    print("=== USER PROMPT ===")
-    print(user_msg)
 
     try:
         resp = client.chat.completions.create(
@@ -707,34 +704,21 @@ def generate_bracelet_reading(user_input: dict) -> dict:
             max_tokens=3000
         )
 
-        print("=== RESPONSE OBJECT ===")
-        print(resp)
-
         content = resp.choices[0].message.content
-        print("=== RAW CONTENT ===")
-        print(content)
 
-        # JSONクリーニング
+        # --- JSONクリーニング ---
         if "```json" in content:
             content = content.split("```json")[1].split("```")[0].strip()
         elif "```" in content:
             content = content.split("```")[1].split("```")[0].strip()
 
-        # 引用表記削除
         content = re.sub(r'\[\d+\]', '', content)
 
-        print("=== CLEANED CONTENT ===")
-        print(content)
-
+        # JSON変換
         try:
             result = json.loads(content)
-        except json.JSONDecodeError as e:
-            print(f"JSON Decode Error: {e}")
-            print(f"Failed content (first 500 chars): {content[:500]}")
-
-            # フォールバック：最低限の形だけ返す
-            # ここでは、メインの石だけは決め打ちでアメジストにしておく例
-            fallback = {
+        except json.JSONDecodeError:
+            result = {
                 "destiny_map": "",
                 "past": "",
                 "present_future": "",
@@ -742,46 +726,27 @@ def generate_bracelet_reading(user_input: dict) -> dict:
                 "oracle_message": "",
                 "bracelet_proposal": "",
                 "stone_support_message": "",
-                "stones_main":[
-                    {"name":"メイン石"}
-                ],
-                "stones_sub":[
-                    {"name":"サブ石"}
-                ],
-                # 今後 element_lack を使うならここで決めてもOK（今は空で可）
+                "stones_main": [{"name": "メイン石"}],
+                "stones_sub": [{"name": "サブ石"}],
                 "element_lack": ""
             }
-            result = fallback
-        print("=== FINAL RESULT ===")
-        print(result)
 
-        # 3. 画像生成URL (Pollinations.ai)
-        # オラクルカード画像
-        card_prompt = f"oracle card art of {card['en']}, mystical glowing gemstone, divine light, intricate golden border, fantasy art, tarot style, high quality, 8k"
-        card_image_url = f"https://image.pollinations.ai/prompt/{card_prompt.replace(' ', '%20')}?width=400&height=600&seed={random.randint(0, 9999)}"
-
-        # 石候補の画像
+        # --- 石選定 ---
         element = result.get("element")
         theme = result.get("theme")
 
-        # AIの提案石から、在庫テーブルにマッチするものを選定して、メイン石とサブ石を決定するロジック
-        # 1) AIの stones_for_user からメイン石を決定（1〜2個）
         main_stones = choose_main_stones(element)
-
-        # 2) メインの色合いからサブ石（8mm）を決定
         sub_stones = choose_sub_stones(main_stones)
 
-        # 3) クライアントに返す stones_for_user を「メイン＋サブ」に差し替え
         result["stones_for_user"] = main_stones + sub_stones
-
-        # 必要なら、別フィールドで区別してもOK
         result["stones_main"] = main_stones
         result["stones_sub"] = sub_stones
 
-        # 結果に統合
-        # ここまでで result["stones_for_user"] = main + sub に差し替え済みとする
+        # --- オラクルカード情報 ---
+        card_prompt = f"oracle card art of {card['en']}, mystical glowing gemstone, divine light, intricate golden border, fantasy art, tarot style, high quality, 8k"
 
-        # 3-A) オラクルカード情報
+        card_image_url = f"https://image.pollinations.ai/prompt/{card_prompt.replace(' ', '%20')}?width=400&height=600&seed={random.randint(0,9999)}"
+
         result['oracle_card'] = {
             'name': card['name'],
             'meaning': meaning,
@@ -789,13 +754,9 @@ def generate_bracelet_reading(user_input: dict) -> dict:
             'image_url': card_image_url
         }
 
-        # 3-B) 石画像プロンプトは「最終決定済みstones_for_user」から作る
-        stone_names_ja = ", ".join([s["name"]
-                                   for s in result["stones_for_user"]])
-        stones_prompt = (
-            f"gemstone bracelet design, {stone_names_ja}, crystal photography, "
-            "soft lighting, white background, high quality, 8k"
-        )
+        # --- ブレスレット画像プロンプト ---
+        stone_names_ja = ", ".join([s["name"] for s in result["stones_for_user"]])
+
         bracelet_prompt = f"""
         luxury gemstone bracelet,
         {stone_names_ja},
@@ -807,9 +768,8 @@ def generate_bracelet_reading(user_input: dict) -> dict:
 
         result["image_prompt"] = bracelet_prompt
 
-        result['stones_image_url'] = stones_image_url
-
-        element = "water"  # 今は固定
+        # --- 商品選定 ---
+        element = "water"  # 仮固定
         theme = choose_theme(user_input.get("concerns", []))
         gender = normalize_gender(user_input.get("gender"))
 
@@ -818,10 +778,10 @@ def generate_bracelet_reading(user_input: dict) -> dict:
         if product:
             result["product_name"] = product["product_name"]
             result["product_slug"] = product["product_slug"]
-            return result
+
+        # ★ここが重要（必ず返す）
+        return result
 
     except Exception as e:
         print(f"Perplexity API Error: {e}")
-        import traceback
-        traceback.print_exc()
         return {"error": str(e)}
