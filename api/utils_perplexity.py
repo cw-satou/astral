@@ -640,12 +640,12 @@ def choose_main_stones(ai_stones):
 
     # 何もマッチしなければ、適当なメイン1個フォールバック
     if not matched:
-        fallback_name = "アメジスト"
+        fallback_name = "ラピスラズリ"
         info = STOCK_STONES[fallback_name]
         matched = [{
             "name": fallback_name,
             **info,
-            "reason": "今回のテーマに合う代表的な守護石として選びました。"
+            "reason": "運命と真実を導く守護石としてラピスラズリが選ばれました。"
         }]
 
     # 最大2個までに制限
@@ -745,11 +745,27 @@ def generate_bracelet_reading(user_input: dict) -> dict:
                 "element_lack": ""
             }
 
-        # --- 石選定 ---
-        element = result.get("element")
-        theme = result.get("theme")
+        # 必須キー補完
+        result.setdefault("destiny_map", "")
+        result.setdefault("past", "")
+        result.setdefault("present_future", "")
+        result.setdefault("element_diagnosis", "")
+        result.setdefault("oracle_message", "")
+        result.setdefault("bracelet_proposal", "")
+        result.setdefault("stone_support_message", "")
+        result.setdefault("element", "water")
+        result.setdefault("theme", "love")
+        result.setdefault("stones_for_user", [
+            {
+                "name": "ラピスラズリ",
+                "reason": "あなたの運命を導く守護石としてラピスラズリが選ばれました。"
+            }
+        ])
 
-        main_stones = choose_main_stones(result.get("stones_for_user", []))
+        # --- 石選定 ---
+        ai_stones = result.get("stones_for_user", [])
+
+        main_stones = choose_main_stones(ai_stones)
         sub_stones = choose_sub_stones(main_stones)
 
         result["stones_for_user"] = main_stones + sub_stones
