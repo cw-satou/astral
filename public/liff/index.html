@@ -760,6 +760,9 @@
                     body: JSON.stringify(formData)
                 });
 
+                if (!res.ok) {
+                    throw new Error(`HTTP error ${res.status}`);
+                }
                 const json = await res.json();
                 window.diagnosisId = json.diagnosis_id;
                 if (json.error) {
@@ -1171,6 +1174,9 @@
                         bracelet_type: designStyle
                     })
                 });
+                if (!res.ok) {
+                    throw new Error(`HTTP error ${res.status}`);
+                }
                 const json = await res.json();
                 if (json.error) {
                     addMsg(`エラーが発生しました: ${json.error}`, false);
@@ -1375,6 +1381,9 @@ ${data.product_name}
                         birth: birth
                     })
                 });
+                if (!res.ok) {
+                    throw new Error(`HTTP error ${res.status}`);
+                }
                 const json = await res.json();
                 // 1) API呼び出しレベルの失敗（HTTPステータス）
                 if (!res.ok) {
@@ -1622,7 +1631,7 @@ ${data.product_name}
             });
             await liff.ready;
             if (!liff.isLoggedIn()) {
-                liff.login();
+                liff.login({ redirectUri: window.location.href });
                 return;
             }
             const profile = await liff.getProfile();

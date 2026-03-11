@@ -11,7 +11,7 @@ import sys
 import time
 from api.utils_perplexity import generate_today_fortune  # 新しく作る
 
-def diagnose(data, line_user_id=None):
+def diagnose():
     """
     第1フェーズ：不足エレメントと、そのエレメントを補う代表石1種類を返す
     """
@@ -19,48 +19,45 @@ def diagnose(data, line_user_id=None):
     print("--- Diagnose Request Started (Phase 1: Element & Main Stone) ---")
 
     try:
-        data = request.get_json(force=True, silent=True)
-        if not data:
-            return jsonify({"error": "Empty request body"}), 400
-        
-        diagnosis_id = str(uuid.uuid4())
-        line_user_id = data.get("line_user_id")
+        req = request.get_json(force=True, silent=True)
 
-        print(f"Received data: {data}")
+        if not req:
+            return jsonify({"error": "Empty request body"}), 400
+
+        print(f"Received data: {req}")
+
+        # 診断ID生成
+        diagnosis_id = str(uuid.uuid4())
+        line_user_id = req.get("line_user_id")
 
         # 1. AI実行
-        result = generate_bracelet_reading(data)
+        result = generate_bracelet_reading(req)
         if not isinstance(result, dict):
             return jsonify({"error": "Invalid AI response"}), 500
 
         # 2. 不足エレメント
         element_lack = result.get("element_lack", "")
 
-        # 3. エレメント→石マッピング（今は1:1、将来ここを増やす）
+        # 3. エレメント→石マッピング
         ELEMENT_STONE_MAP = {
             "火": "ガーネット",
             "地": "タイガーアイ",
             "風": "ラピスラズリ",
             "水": "アクアマリン",
-            # 例: 増やすときは "火": ["ガーネット","カーネリアン"] などにして分岐
         }
 
         stone_name = ELEMENT_STONE_MAP.get(element_lack, "水晶")
 
-        # 4. stones_for_user を「メイン石1つ」だけにしておく（将来は配列増やせる）
+        # 4. stones_for_user
         stones_for_user = [{
             "name": stone_name,
             "reason": f"不足している「{element_lack}」のエレメントを補い、あなたのバランスを整える石です。"
         }]
 
-        # 5. 診断ID生成
-        diagnosis_id = data.get("diagnosis_id")
-
-        if not diagnosis_id:
-            return jsonify({"error": "diagnosis_id required"}), 400
+        # 5. 作成日時
         created_at = datetime.utcnow().isoformat()
 
-        # 6. 結果をスプレッドシートに保存
+        # 6. スプレッドシート保存
         log_data = {
             "diagnosis_id": diagnosis_id,
             "created_at": created_at,
@@ -68,38 +65,36 @@ def diagnose(data, line_user_id=None):
             "stone_name": stone_name,
             "element_lack": element_lack,
 
-            "horoscope_full": result.get("destiny_map",""),
-            "past": result.get("past",""),
-            "present_future": result.get("present_future",""),
-            "element_detail": result.get("element_diagnosis",""),
+            "horoscope_full": result.get("destiny_map", ""),
+            "past": result.get("past", ""),
+            "present_future": result.get("present_future", ""),
+            "element_detail": result.get("element_diagnosis", ""),
 
-            "oracle_name": result.get("oracle_card", {}).get("name",""),
-            "oracle_position": result.get("oracle_card", {}).get("position",""),
+            "oracle_name": result.get("oracle_card", {}).get("name", ""),
+            "oracle_position": result.get("oracle_card", {}).get("position", ""),
 
             "stones": "",
             "product_slug": "",
 
             "user_line_id": line_user_id
         }
+
         add_diagnosis(log_data)
 
-        # 7. フロント向け返却（フル鑑定をそのまま渡す）
+        # 7. フロント返却
         full_response = {
-            # まず Perplexity の結果を全部展開
             **result,
 
-            # そこにメタ情報を上書き・追加
             "line_user_id": line_user_id,
             "diagnosis_id": diagnosis_id,
             "element_lack": element_lack,
             "stone_name": stone_name,
-            # ★オラクルカード名をフロント向けにも固定キーで渡す
+
             "oraclecardname": result.get("oracle_card", {}).get("name", ""),
-            # short_message は、将来使いたくなった時用にここで決めてもOK
+
             "short_message": result.get("short_message") or
             f"今のあなたに不足しているのは「{element_lack}」のエレメント。そのバランスを整える代表的な石が『{stone_name}』です。",
 
-            # stones_for_user は、AI側が出してくれたものを優先
             "stones_for_user": result.get("stones_for_user") or stones_for_user,
         }
 
@@ -110,7 +105,10 @@ def diagnose(data, line_user_id=None):
 
     except Exception as e:
         traceback.print_exc()
-        return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
+        return jsonify({
+            "error": "Internal Server Error",
+            "message": str(e)
+        }), 500
     
 def today_fortune():
     """
