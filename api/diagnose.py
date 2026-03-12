@@ -46,12 +46,21 @@ def diagnose():
         }
 
         stone_name = ELEMENT_STONE_MAP.get(element_lack, "水晶")
-
-        # 4. stones_for_user
         stones_for_user = [{
             "name": stone_name,
             "reason": f"不足している「{element_lack}」のエレメントを補い、あなたのバランスを整える石です。"
         }]
+
+        # 4. 石→商品マッピング（在庫商品）
+        STONE_PRODUCT_MAP = {
+            "ガーネット": "top-garnet",
+            "タイガーアイ": "top-tiger-eye",
+            "ラピスラズリ": "top-lapis",
+            "アクアマリン": "top-aquamarine",
+            "水晶": "top-crystal"
+        }
+
+        product_slug = STONE_PRODUCT_MAP.get(stone_name, "top-crystal")
 
         # 5. 作成日時
         created_at = datetime.utcnow().isoformat()
@@ -60,21 +69,16 @@ def diagnose():
         log_data = {
             "diagnosis_id": diagnosis_id,
             "created_at": created_at,
-
             "stone_name": stone_name,
             "element_lack": element_lack,
-
+            "product_slug": product_slug,
             "horoscope_full": result.get("destiny_map", ""),
             "past": result.get("past", ""),
             "present_future": result.get("present_future", ""),
             "element_detail": result.get("element_diagnosis", ""),
-
             "oracle_name": result.get("oracle_card", {}).get("name", ""),
             "oracle_position": result.get("oracle_card", {}).get("position", ""),
-
             "stones": "",
-            "product_slug": "",
-
             "user_line_id": line_user_id
         }
 
@@ -88,6 +92,7 @@ def diagnose():
             "diagnosis_id": diagnosis_id,
             "element_lack": element_lack,
             "stone_name": stone_name,
+            "product_slug": product_slug,
 
             "oraclecardname": result.get("oracle_card", {}).get("name", ""),
 
