@@ -442,11 +442,7 @@
             stepConcerns();
         }
         async function stepDivinationIntro() {
-            await addMsg("まずは、今のあなたについて少しだけ教えてください。\nはっきりした悩みがなくても大丈夫です。", false);
-            await addMsg(
-                "なんとなく気になっていることや、こうなれたらいいなと思うことがあれば、そのままの言葉で書いてください。",
-                false
-            );
+            await addMsg("まずは、今のあなたについて少しだけ教えてください。", false);
             showAstrologicalInfoForm();
         }
         function stepAstrologicalInfo() {
@@ -489,7 +485,7 @@
         }
         function showAstrologicalInfoForm() {
             setProgress(1, 4, "プロフィール入力");
-            addMsg('診断に必要な情報をお聞きします。', false);
+            addMsg('まず、診断に必要な情報をお聞かせください。', false);
             const gender = formData.gender || '';
             const birth = formData.birth || {};
             const savedDate = birth.date || '';
@@ -876,8 +872,7 @@
                 scrollChatToBottom();
                 await typeIntoElement(p, sec.text, 20);
                 if (sec.key === "element_diagnosis") {
-                    await addMsg("エレメントのバランスを見たあと、", false);
-                    await addMsg("オラクルカードも引いてみましょう。", false);
+                    await addMsg("エレメントのバランスを見たあと、オラクルカードも引いてみましょう。", false);
                     await showOracleCard(result.oracle_card);
                     const wrapper2 = document.createElement("div");
                     wrapper2.className = "msg bot";
@@ -898,7 +893,6 @@
 </button>
 `);
             }
-            showCurrentSection();
             async function showNextSection() {
                 const next = sections[currentIndex + 1];
                 const isLast = (currentIndex === sections.length - 1);
