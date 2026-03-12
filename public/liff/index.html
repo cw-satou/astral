@@ -753,7 +753,7 @@
   `);
             const thinkingTimer = setInterval(rotateThinking, 2000);
             try {
-                formData.line_user_id = window.LINE_USER_ID;
+                formData.line_user_id = window.LINE_USER_ID || userId;
                 const res = await fetch(`/api/diagnose`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1626,17 +1626,17 @@ ${data.product_name}
     </script>
     <script>
         async function initLiff() {
-            await liff.init({
-                liffId: "2009078638-GZhFVgaz"
-            });
-            await liff.ready;
-            if (!liff.isLoggedIn()) {
-                liff.login({ redirectUri: window.location.href });
-                return;
+            try {
+                await liff.init({
+                    liffId: "2009078638-GZhFVgaz"
+                });
+                if (liff.isLoggedIn()) {
+                    const profile = await liff.getProfile();
+                    window.LINE_USER_ID = profile.userId;
+                }
+            } catch (e) {
+                console.log("LIFF not available");
             }
-            const profile = await liff.getProfile();
-            const userId = profile.userId;
-            window.LINE_USER_ID = userId;
         }
         function fillOrderNote() {
             const params = new URLSearchParams(window.location.search)

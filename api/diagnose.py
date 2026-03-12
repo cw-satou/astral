@@ -2,14 +2,13 @@ from flask import request, jsonify
 from api.utils_perplexity import generate_bracelet_reading
 from api.utils_order import build_order_summary
 from api.utils_sheet import add_diagnosis, format_stones, update_diagnosis
-from datetime import datetime
+from api.utils_perplexity import generate_today_fortune  # 新しく作る
 from datetime import datetime
 import uuid
 import json
 import traceback
 import sys
 import time
-from api.utils_perplexity import generate_today_fortune  # 新しく作る
 
 def diagnose():
     """
@@ -109,6 +108,40 @@ def diagnose():
             "error": "Internal Server Error",
             "message": str(e)
         }), 500
+
+def get_birthstone_from_birth(birth_info):
+
+    date = birth_info.get("date")
+
+    if not date:
+        return {
+            "name": "水晶",
+            "reason": "基本の調和をもたらす石"
+        }
+
+    month = int(date.split("-")[1])
+
+    BIRTH_STONES = {
+        1: ("ガーネット", "情熱と生命力を象徴する石"),
+        2: ("アメジスト", "精神を落ち着かせ直感を高める石"),
+        3: ("アクアマリン", "心を穏やかにする石"),
+        4: ("水晶", "浄化と調和の石"),
+        5: ("エメラルド", "愛と再生の石"),
+        6: ("ムーンストーン", "感情と直感の石"),
+        7: ("ルビー", "情熱と守護の石"),
+        8: ("ペリドット", "希望とポジティブな変化の石"),
+        9: ("サファイア", "知性と洞察の石"),
+        10: ("オパール", "創造性と自由の石"),
+        11: ("トパーズ", "成功と希望の石"),
+        12: ("ターコイズ", "守護と旅の石")
+    }
+
+    name, reason = BIRTH_STONES.get(month, ("水晶", "調和の石"))
+
+    return {
+        "name": name,
+        "reason": reason
+    }
     
 def today_fortune():
     """
@@ -182,8 +215,10 @@ def build_bracelet():
 
 
         # 3. 「あなたを導く石たち」というカスタム注文内容を生成
-        order_summary = generate_stone_summary(
-            stones, wrist_inner_cm, bead_size_mm, bracelet_type
+        order_summary = build_order_summary(
+            {"stones": stones},
+            wrist_inner_cm,
+            bead_size_mm
         )
 
         elapsed_time = time.time() - start_time
