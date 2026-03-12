@@ -391,9 +391,7 @@
                 const div = document.createElement('div');
                 div.className = `msg ${isUser ? 'user' : 'bot'}`;
                 box.appendChild(div);
-                const formatted = formatText(
-                    text.replace(/\n+/g, '<br>').replace(/(<br>)+/g, '<br><br>')
-                );
+                const formatted = formatText(text.replace(/\n/g, '<br>'));
                 // ユーザーは即表示
                 if (isUser) {
                     div.innerHTML = formatted;
