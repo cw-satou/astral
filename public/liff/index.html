@@ -891,6 +891,10 @@
 <button class="btn" onclick="showProductCandidates()">
 💎 ブレスレットを見る
 </button>
+
+<button class="btn btn-secondary" onclick="goLineRegister()">
+🔮 LINEでオラクルカードを受け取る
+</button>
 `);
                     return;
                 }
@@ -946,6 +950,17 @@
             window.showNextSection = showNextSection;
             await showCurrentSection();
         };
+        function goLineRegister() {
+
+            const productId = p.id;
+            const diagnosisId = window.diagnosisId;
+
+            const url =
+                `https://spicastar.info/atlas/?p=${productId}&d=${diagnosisId}`;
+
+            window.location.href =
+                url + "?d=" + diagnosisId;
+        }
         function showProductCandidates() {
             if (!productCandidates || productCandidates.length === 0) {
                 addMsg('関連するブレスレット候補が見つかりませんでした。', false);
@@ -1016,18 +1031,8 @@
 
             // slug 優先、なければ ID を ?p=ID で開く
             let url = '';
-            if (p.slug) {
-                const diagnosisId = window.diagnosisId;
-                url = `https://spicastar.info/atlas/shop/product/${p.slug}/`;
-                if (diagnosisId) {
-                    url += `?d=${diagnosisId}`;
-                }
-            } else if (p.id) {
-                const diagnosisId = window.diagnosisId;
+            if (p.id) {
                 url = `https://spicastar.info/atlas/?p=${p.id}`;
-                if (diagnosisId) {
-                    url += `&d=${diagnosisId}`;
-                }
             } else {
                 addMsg('商品ページの情報が足りませんでした。', false);
                 return;
