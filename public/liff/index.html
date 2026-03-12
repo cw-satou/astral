@@ -587,7 +587,7 @@
             formData.birth = { date, time, place };
             addMsg('わかりました。この情報で星を見ていきますね。', true);
             // もし「今日の運勢」から来ていたなら、そこに戻す
-            if (selectedMode === 'today_ai') {
+            if (selectedMode === 'today_fortune') {
                 stepTodayFortune();
             } else {
                 // 通常フローの場合は、元の流れへ
