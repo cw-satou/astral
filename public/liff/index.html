@@ -391,7 +391,7 @@
                 const div = document.createElement('div');
                 div.className = `msg ${isUser ? 'user' : 'bot'}`;
                 box.appendChild(div);
-                const formatted = formatText(text.replace(/\n/g, '<br>'));
+                const formatted = formatText(text.replace(/\n/g, "<br>"));
                 // ユーザーは即表示
                 if (isUser) {
                     div.innerHTML = formatted;
@@ -850,23 +850,43 @@
             let currentIndex = 0;
             await addMsg(`ここからは、星の配置とエレメントの流れをもとに、\n${nameForDisplay}の今の流れを読み解いていきます。`, false);
             function typeIntoElement(element, rawText, speed = 20) {
+
                 return new Promise(resolve => {
-                    const text = rawText || "";
+
+                    const html = formatText(rawText || "");
+
+                    const plain = html
+                        .replace(/<br\s*\/?>/gi, "\n")
+                        .replace(/<[^>]*>/g, "");
+
                     let i = 0;
-                    element.textContent = "";
+
                     function step() {
-                        if (i < text.length) {
-                            element.textContent = text.slice(0, i + 1);
+
+                        if (i < plain.length) {
+
+                            element.textContent = plain.slice(0, i + 1);
+
                             i++;
+
                             scrollChatToBottom();
+
                             setTimeout(step, speed);
+
                         } else {
-                            element.innerHTML = formatText(text);
+
+                            element.innerHTML = html;
+
                             resolve();
+
                         }
+
                     }
+
                     step();
+
                 });
+
             }
             async function showCurrentSection() {
                 if (currentIndex >= sections.length) {
@@ -939,6 +959,7 @@
                 showCurrentSection();
             }
             window.showNextSection = showNextSection;
+            showCurrentSection();
         };
         function selectOrderType(type) {
             if (type === 'custom') {
