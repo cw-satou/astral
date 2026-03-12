@@ -850,7 +850,7 @@
                     key: "stone_support_message",
                     title: "石からのサポートメッセージ",
                     text: result.stone_support_message,
-                    lead: "最後に石たちのメッセージをお伝えします。"
+                    lead: "石たちのメッセージをお伝えします。"
                 }
             ].filter(sec => sec.text);
             let currentIndex = 0;
@@ -912,7 +912,7 @@
                 scrollChatToBottom();
                 await typeIntoElement(p, sec.text, 20);
                 if (sec.key === "element_diagnosis") {
-                    await addMsg("エレメントのバランスを見たあと、オラクルカードも引いてみましょう。", false);
+                    await addMsg("最後にオラクルカードを引いて、導きの声を聞いてみましょう。", false);
                     await showOracleCard(result.oracle_card);
                     const wrapper2 = document.createElement("div");
                     wrapper2.className = "msg bot";

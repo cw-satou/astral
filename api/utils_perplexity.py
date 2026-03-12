@@ -19,52 +19,22 @@ else:
 
 
 PRODUCT_BY_MAIN_STONE = {
-    "ラピスラズリ": {
-        "id": 1203,
-        "slug": "bracelet-lapis-gray"
-    },
-    "カーネリアン・サードニクス": {
-        "id": 1204,
-        "slug": "bracelet-carnelian-gray"
-    },
-    "マラカイト": {
-        "id": 1205,
-        "slug": "bracelet-malachite-gray"
-    },
-    "アメジスト": {
-        "id": 1206,
-        "slug": "bracelet-amethyst-gray"
-    }
+    "ラピスラズリ": {"id": 1203, "slug": "bracelet-lapis-gray"},
+    "カーネリアン・サードニクス": {"id": 1204, "slug": "bracelet-carnelian-gray"},
+    "マラカイト": {"id": 1205, "slug": "bracelet-malachite-gray"},
+    "アメジスト": {"id": 1206, "slug": "bracelet-amethyst-gray"},
 }
 
 LIMITED_PRODUCTS = {
-    "ラピスラズリ": {
-        "id": 1207,
-        "slug": "bracelet-iris-lapis-gray"
-    },
-    "カーネリアン・サードニクス": {
-        "id": 1208,
-        "slug": "bracelet-iris-carnelian-gray"
-    },
-    "マラカイト": {
-        "id": 1209,
-        "slug": "bracelet-iris-malachite-gray"
-    },
-    "アメジスト": {
-        "id": 1210,
-        "slug": "bracelet-iris-amethyst-gray"
-    }
+    "ラピスラズリ": {"id": 1207, "slug": "bracelet-iris-lapis-gray"},
+    "カーネリアン・サードニクス": {"id": 1208, "slug": "bracelet-iris-carnelian-gray"},
+    "マラカイト": {"id": 1209, "slug": "bracelet-iris-malachite-gray"},
+    "アメジスト": {"id": 1210, "slug": "bracelet-iris-amethyst-gray"},
 }
 
 COLOR_PRODUCTS = {
-    "ローズクォーツ": {
-        "id": 1202,
-        "slug": "bracelet-yasashiitsuki",
-    },
-    "シーブルーカルセドニー": {
-        "id": 1201,
-        "slug": "bracelet-shizukanaumi",
-    },
+    "マダガスカル産ローズクォーツ": {"id": 1202, "slug": "bracelet-yasashiitsuki"},
+    "シーブルーカルセドニー": {"id": 1201, "slug": "bracelet-shizukanaumi"},
 }
 
 
@@ -278,19 +248,19 @@ def weakest_element(balance):
 def choose_products(main_stone, sub_stones):
     products = []
 
-    # 1. メイン石ベースの商品（ラピス／カーネリアン／マラカイト／アメジスト）
+    # 1. メイン石ベース（ラピス／カーネリアン／マラカイト／アメジスト）
     base = PRODUCT_BY_MAIN_STONE.get(main_stone)
     if base:
         products.append(base)
 
-    # 2. サブ石にグレークォーツが入っていたら「アイリスシリーズ」を追加
+    # 2. サブ石にグレークォーツがあればアイリスシリーズも
     has_gray = any(s["name"] == "グレークォーツ" for s in sub_stones)
     if has_gray:
         limited = LIMITED_PRODUCTS.get(main_stone)
         if limited:
             products.append(limited)
 
-    # 3. サブ石にローズ or シーブルーがあれば、色系既製品も追加
+    # 3. サブ石にローズ or シーブルーがあれば、色系既製品も
     for s in sub_stones:
         color_prod = COLOR_PRODUCTS.get(s["name"])
         if color_prod and color_prod not in products:
