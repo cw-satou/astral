@@ -1,76 +1,140 @@
+"""メール送信ユーティリティ
+
+オーダー確定時の通知メール送信機能を提供する。
+"""
+
 import os
 import smtplib
+import logging
+import json
 from email.mime.text import MIMEText
 from email.utils import formatdate
-import json
 from datetime import datetime
 
-SMTP_HOST = os.environ.get("SMTP_HOST", "")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
-SMTP_USER = os.environ.get("SMTP_USER", "")
-SMTP_PASS = os.environ.get("SMTP_PASS", "")
+logger = logging.getLogger(__name__)
 
-TO_ADDRESS = "cw.satou@gmail.com"
 
 def send_order_mail(order_data: dict, diagnosis_id: str) -> bool:
-    """
-    オーダー確定時にメールを送信
+    """オーダー確定時に管理者へ通知メールを送信する
 
     Args:
-        order_data: オーダーサマリー情報（辞書）
+        order_data: オーダーサマリー情報
         diagnosis_id: 診断ID
 
     Returns:
-        送信成功時は True、失敗時は False
+        送信成功時はTrue、失敗時はFalse
     """
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    to_address = os.environ.get("ORDER_NOTIFICATION_EMAIL", "")
 
-    # SMTP設定がない場合はログだけ出して続行
-    if not (SMTP_HOST and SMTP_USER and SMTP_PASS):
-        print("⚠️  SMTP settings not fully configured; email not sent.")
-        print(f"   Configure SMTP_HOST, SMTP_USER, SMTP_PASS in Vercel env vars")
+    if not (smtp_host and smtp_user and smtp_pass and to_address):
+        logger.warning(
+            "SMTP設定が不完全です（SMTP_HOST, SMTP_USER, SMTP_PASS, "
+            "ORDER_NOTIFICATION_EMAIL を設定してください）"
+        )
         return False
 
     try:
         subject = f"【星の羅針盤】オーダー通知 #{diagnosis_id}"
 
-        # メール本文を作成
-        body = f"""星の羅針盤へのオーダーが確定しました。
+        body = (
+            "星の羅針盤へのオーダーが確定しました。\n"
+            "\n"
+            f"【診断ID】\n{diagnosis_id}\n"
+            "\n"
+            "【オーダー内容】\n"
+            f"{json.dumps(order_data, ensure_ascii=False, indent=2)}\n"
+            "\n"
+            "【送信時刻】\n"
+            f"{datetime.now().strftime('%Y年%m月%d日 %H:%M:%S')}\n"
+            "\n"
+            "---\n"
+            "星の羅針盤 - 占い×アクセサリー\n"
+        )
 
-【診断ID】
-{diagnosis_id}
-
-【オーダー内容】
-{json.dumps(order_data, ensure_ascii=False, indent=2)}
-
-【送信時刻】
-{datetime.now().strftime('%Y年%m月%d日 %H:%M:%S')}
-
----
-星の羅針盤 - 占い×アクセサリー
-"""
-
-        # メール作成
         msg = MIMEText(body, _charset="utf-8")
         msg["Subject"] = subject
-        msg["From"] = SMTP_USER
-        msg["To"] = TO_ADDRESS
+        msg["From"] = smtp_user
+        msg["To"] = to_address
         msg["Date"] = formatdate(localtime=True)
 
-        # 送信
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as s:
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as s:
             s.starttls()
-            s.login(SMTP_USER, SMTP_PASS)
+            s.login(smtp_user, smtp_pass)
             s.send_message(msg)
 
-        print(f"✅ Order email sent to {TO_ADDRESS}")
+        logger.info(f"注文通知メール送信成功: to={to_address}")
         return True
 
-    except smtplib.SMTPAuthenticationError as auth_err:
-        print(f"❌ SMTP Authentication Error: {str(auth_err)}")
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"SMTP認証エラー: {e}")
         return False
-    except smtplib.SMTPException as smtp_err:
-        print(f"❌ SMTP Error: {str(smtp_err)}")
+    except smtplib.SMTPException as e:
+        logger.error(f"SMTPエラー: {e}")
         return False
     except Exception as e:
-        print(f"❌ Mail Error: {str(e)}")
+        logger.error(f"メール送信エラー: {e}")
+        return False
+
+
+def send_rate_limit_alert(ip_address: str, endpoint: str, count: int) -> bool:
+    """レート制限超過時に管理者へ警告メールを送信する
+
+    Args:
+        ip_address: 超過したIPアドレス
+        endpoint: 対象エンドポイント
+        count: リクエスト数
+
+    Returns:
+        送信成功時はTrue、失敗時はFalse
+    """
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    to_address = os.environ.get("ORDER_NOTIFICATION_EMAIL", "")
+
+    if not (smtp_host and smtp_user and smtp_pass and to_address):
+        logger.warning("レート制限警告メール: SMTP設定が不完全です")
+        return False
+
+    try:
+        subject = "【星の羅針盤】レート制限超過警告"
+
+        body = (
+            "レート制限が超過しました。\n"
+            "\n"
+            f"【IPアドレス】\n{ip_address}\n"
+            "\n"
+            f"【エンドポイント】\n{endpoint}\n"
+            "\n"
+            f"【リクエスト数】\n{count}回\n"
+            "\n"
+            "【検出時刻】\n"
+            f"{datetime.now().strftime('%Y年%m月%d日 %H:%M:%S')}\n"
+            "\n"
+            "※同一IPからの警告は1時間に1回までに制限されています。\n"
+            "---\n"
+            "星の羅針盤 - システム監視\n"
+        )
+
+        msg = MIMEText(body, _charset="utf-8")
+        msg["Subject"] = subject
+        msg["From"] = smtp_user
+        msg["To"] = to_address
+        msg["Date"] = formatdate(localtime=True)
+
+        with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as s:
+            s.starttls()
+            s.login(smtp_user, smtp_pass)
+            s.send_message(msg)
+
+        logger.info(f"レート制限警告メール送信成功: IP={ip_address}")
+        return True
+
+    except Exception as e:
+        logger.error(f"レート制限警告メール送信エラー: {e}")
         return False
