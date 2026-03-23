@@ -1,0 +1,15 @@
+{
+  "name": "astral",
+  "version": "1.0.0",
+  "description": "星の羅針盤「あとらす」- 西洋占星術×クリスタルヒーリング占いサービス",
+  "private": true,
+  "scripts": {
+    "build": "esbuild public/liff/src/main.ts --bundle --outfile=public/liff/dist/bundle.js --format=iife --target=es2020 --sourcemap",
+    "build:watch": "esbuild public/liff/src/main.ts --bundle --outfile=public/liff/dist/bundle.js --format=iife --target=es2020 --sourcemap --watch",
+    "typecheck": "tsc --project public/liff/tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  }
+}

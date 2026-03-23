@@ -164,11 +164,40 @@ SYSTEM_PROMPT = f"""
 
 # ===== ホロスコープ計算 =====
 
+# Swiss Ephemeris のデータパス設定
+# swe.set_ephe_path(None) はビルトインのMoshier ephemerisを使用する。
+# Moshier ephemerisは外部データファイル不要で、Vercelサーバーレス環境でも動作する。
+# 精度はSwiss Ephemeris本体（約0.001秒角）より劣るが、
+# 占星術の実用上十分な精度（約0.1秒角）を持つ。
+swe.set_ephe_path(None)
+
+
 def calculate_chart(date: str, time: str, lat: float, lon: float) -> dict:
-    """出生情報から惑星の黄経を計算する"""
-    swe.set_ephe_path(".")
-    dt = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
-    jd = swe.julday(dt.year, dt.month, dt.day, dt.hour + dt.minute / 60)
+    """出生情報から惑星の黄経を計算し、星座とエレメントバランスを返す
+
+    Swiss Ephemeris（pyswisseph）を使用してホロスコープチャートを計算する。
+    Swiss Ephemerisは天文学的に正確な惑星位置計算ライブラリで、
+    指定された日時・場所から各惑星の黄道上の位置（黄経）を算出する。
+
+    ビルトインのMoshier ephemerisを使用するため、外部データファイルは不要。
+
+    Args:
+        date: 生年月日（"YYYY-MM-DD"形式）
+        time: 出生時間（"HH:MM"形式）
+        lat: 出生地の緯度
+        lon: 出生地の経度
+
+    Returns:
+        星座配置とエレメントバランスを含む辞書
+    """
+    try:
+        dt = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M")
+    except ValueError:
+        logger.warning(f"日時パースエラー: date={date}, time={time}")
+        return {}
+
+    # ユリウス日の計算（天文計算の基準日時）
+    jd = swe.julday(dt.year, dt.month, dt.day, dt.hour + dt.minute / 60.0)
 
     planets = {
         "sun": swe.SUN,
@@ -178,12 +207,41 @@ def calculate_chart(date: str, time: str, lat: float, lon: float) -> dict:
         "mars": swe.MARS,
     }
 
+    # 各惑星の黄経を計算し、星座を判定
     positions = {}
-    for name, planet in planets.items():
-        pos = swe.calc_ut(jd, planet)[0][0]
-        positions[name] = pos
+    signs = {}
+    for name, planet_id in planets.items():
+        try:
+            result = swe.calc_ut(jd, planet_id)
+            longitude = result[0][0]  # 黄経（度）
+            positions[name] = longitude
+            signs[name] = get_sign(longitude)
+        except Exception as e:
+            logger.warning(f"惑星計算エラー ({name}): {e}")
+            signs[name] = _DEFAULT_CHART.get(name, "Aries")
 
-    return positions
+    # ASC（アセンダント）の計算
+    try:
+        houses = swe.houses(jd, lat, lon, b'P')  # Placidusハウスシステム
+        asc_degree = houses[1][0]  # ASCの黄経
+        asc_sign = get_sign(asc_degree)
+    except Exception as e:
+        logger.warning(f"ASC計算エラー: {e}")
+        asc_sign = _DEFAULT_CHART.get("asc", "Cancer")
+
+    # エレメントバランスの計算
+    all_signs = {**signs, "asc": asc_sign}
+    balance = sign_element_balance(all_signs)
+
+    return {
+        "sun": signs.get("sun", "Aries"),
+        "moon": signs.get("moon", "Aries"),
+        "mercury": signs.get("mercury", "Aries"),
+        "venus": signs.get("venus", "Aries"),
+        "mars": signs.get("mars", "Aries"),
+        "asc": asc_sign,
+        "element_balance": balance,
+    }
 
 
 def get_sign(deg: float) -> str:

@@ -4,8 +4,10 @@ import logging
 
 from api.diagnose import diagnose, build_bracelet
 from api.utils_sheet import get_diagnosis, upsert_profile, get_profile
-from api.utils_perplexity import generate_today_fortune
+from api.utils_perplexity import generate_today_fortune, calculate_chart
+from api.utils_geocode import geocode
 from api.woo_webhook import woo_webhook
+from api.utils_rate_limit import rate_limited
 
 # ロギング設定
 logging.basicConfig(level=logging.INFO)
@@ -17,12 +19,14 @@ app = Flask(__name__, static_folder='public', static_url_path='')
 # ===== 診断関連ルート =====
 
 @app.route('/api/diagnose', methods=['POST'])
+@rate_limited
 def route_diagnose():
     """占い診断（第1フェーズ：エレメント＆メインストーン選定）"""
     return diagnose()
 
 
 @app.route('/api/build-bracelet', methods=['POST'])
+@rate_limited
 def route_build_bracelet():
     """ブレスレット生成（第2フェーズ：サイズ＆デザイン決定）"""
     return build_bracelet()
@@ -75,11 +79,25 @@ def fortune_detail():
 
 
 @app.route("/api/today-fortune", methods=["POST"])
+@rate_limited
 def today_fortune():
     """今日の運勢API（生年月日・出生時間・出生地ベース）"""
     try:
         data = request.get_json(force=True, silent=True) or {}
-        message = generate_today_fortune(data)
+
+        # ホロスコープ計算（出生情報があれば実際のチャートを計算）
+        chart_data = None
+        birth = data.get("birth", {})
+        if birth.get("date") and birth.get("time"):
+            try:
+                lat, lon = geocode(birth.get("place", ""))
+                chart_data = calculate_chart(
+                    birth["date"], birth["time"], lat, lon
+                )
+            except Exception as e:
+                logger.warning(f"今日の運勢: ホロスコープ計算エラー: {e}")
+
+        message = generate_today_fortune(data, chart_data=chart_data)
         return jsonify({"message": message}), 200
     except Exception as e:
         logger.exception("今日の運勢API エラー")

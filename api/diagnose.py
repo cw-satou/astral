@@ -9,13 +9,14 @@ import logging
 import time
 import traceback
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import request, jsonify
 
-from api.utils_perplexity import generate_bracelet_reading
+from api.utils_perplexity import generate_bracelet_reading, calculate_chart
 from api.utils_order import build_order_summary
 from api.utils_sheet import add_diagnosis, format_stones, update_diagnosis
+from api.utils_geocode import geocode
 
 logger = logging.getLogger(__name__)
 
@@ -88,8 +89,27 @@ def diagnose():
         diagnosis_id = str(uuid.uuid4())
         line_user_id = req.get("line_user_id")
 
-        # AI鑑定実行
-        result = generate_bracelet_reading(req)
+        # ホロスコープ計算（出生情報があれば実際のチャートを計算）
+        chart_data = None
+        birth = req.get("birth", {})
+        if birth.get("date") and birth.get("time"):
+            try:
+                lat, lon = geocode(birth.get("place", ""))
+                chart_data = calculate_chart(
+                    birth["date"], birth["time"], lat, lon
+                )
+                if chart_data:
+                    logger.info(
+                        f"ホロスコープ計算完了: "
+                        f"sun={chart_data.get('sun')}, "
+                        f"moon={chart_data.get('moon')}, "
+                        f"asc={chart_data.get('asc')}"
+                    )
+            except Exception as e:
+                logger.warning(f"ホロスコープ計算エラー（デフォルト値を使用）: {e}")
+
+        # AI鑑定実行（ホロスコープデータがあれば渡す）
+        result = generate_bracelet_reading(req, chart_data=chart_data)
         if not isinstance(result, dict):
             return jsonify({"error": "AIレスポンスが不正です"}), 500
 
@@ -101,7 +121,7 @@ def diagnose():
         element_lack = result.get("element_lack", "")
         stone_name = ELEMENT_STONE_MAP.get(element_lack, "水晶")
         product_slug = STONE_PRODUCT_MAP.get(stone_name, "top-crystal")
-        created_at = datetime.utcnow().isoformat()
+        created_at = datetime.now(timezone.utc).isoformat()
 
         stones_for_user = [{
             "name": stone_name,

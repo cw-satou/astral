@@ -2,10 +2,16 @@
 
 スプレッドシートへの診断結果・注文・プロフィールの読み書き機能を提供する。
 gspread ライブラリを使用してGoogle Sheets APIにアクセスする。
+
+改善点:
+- クライアントとワークシートのキャッシュ（レイテンシ改善）
+- 書き込みリトライロジック（信頼性向上）
+- ヘッダー行の自動作成（初回セットアップ対応）
 """
 
 import os
 import json
+import time
 import logging
 import gspread
 from google.oauth2.service_account import Credentials
@@ -22,18 +28,55 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
+# 各シートの期待するヘッダー行
+EXPECTED_HEADERS = {
+    LOG_SHEET_NAME: [
+        "diagnosis_id", "created_at", "stone_name", "element_lack",
+        "horoscope_full", "past", "present_future", "element_detail",
+        "oracle_name", "oracle_position", "stones", "product_slug",
+        "user_line_id", "purchased",
+    ],
+    ORDER_SHEET_NAME: [
+        "order_id", "diagnosis_id", "user_line_id", "product_slug",
+        "stones", "wrist_inner_cm", "bead_size_mm", "bracelet_type",
+        "order_status", "created_at",
+    ],
+    PROFILE_SHEET_NAME: [
+        "user_id", "gender", "birth_date", "birth_time",
+        "birth_place", "wrist_inner_cm", "bead_size_mm", "bracelet_type",
+    ],
+}
 
-# ===== クライアント生成 =====
+# ===== キャッシュ =====
+
+# キャッシュの有効期間（秒）: Vercelのコールドスタート対策
+# サーバーレス環境ではプロセスが再利用される間はキャッシュが効く
+CACHE_TTL = 300  # 5分
+
+_client_cache: dict = {"client": None, "expires": 0}
+_worksheet_cache: dict = {}  # {sheet_name: {"ws": worksheet, "expires": timestamp}}
+
 
 def _get_client() -> gspread.Client:
-    """認証済みgspreadクライアントを返す"""
+    """認証済みgspreadクライアントを返す（キャッシュ付き）"""
+    now = time.time()
+
+    if _client_cache["client"] and now < _client_cache["expires"]:
+        return _client_cache["client"]
+
     creds_json = os.environ.get("GOOGLE_SERVICE_ACCOUNT_JSON", "")
     if not creds_json:
         raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON 環境変数が設定されていません")
 
     info = json.loads(creds_json)
     creds = Credentials.from_service_account_info(info, scopes=SCOPES)
-    return gspread.authorize(creds)
+    client = gspread.authorize(creds)
+
+    _client_cache["client"] = client
+    _client_cache["expires"] = now + CACHE_TTL
+
+    logger.info("Google Sheets クライアントを新規作成しました")
+    return client
 
 
 def _get_sheet_id() -> str:
@@ -45,10 +88,54 @@ def _get_sheet_id() -> str:
 
 
 def _get_worksheet(sheet_name: str) -> gspread.Worksheet:
-    """指定名のワークシートを返す"""
+    """指定名のワークシートを返す（キャッシュ付き）"""
+    now = time.time()
+    cached = _worksheet_cache.get(sheet_name)
+
+    if cached and now < cached["expires"]:
+        return cached["ws"]
+
     client = _get_client()
     sh = client.open_by_key(_get_sheet_id())
-    return sh.worksheet(sheet_name)
+
+    try:
+        ws = sh.worksheet(sheet_name)
+    except gspread.exceptions.WorksheetNotFound:
+        # ワークシートが存在しない場合は新規作成
+        logger.info(f"ワークシート '{sheet_name}' が見つかりません。新規作成します。")
+        ws = sh.add_worksheet(title=sheet_name, rows=1000, cols=20)
+
+    # ヘッダー行の確認・作成
+    _ensure_headers(ws, sheet_name)
+
+    _worksheet_cache[sheet_name] = {"ws": ws, "expires": now + CACHE_TTL}
+    return ws
+
+
+def _ensure_headers(ws: gspread.Worksheet, sheet_name: str):
+    """ヘッダー行が存在しない場合は作成する"""
+    expected = EXPECTED_HEADERS.get(sheet_name)
+    if not expected:
+        return
+
+    try:
+        first_row = ws.row_values(1)
+        if not first_row or len(first_row) == 0:
+            # ヘッダー行がないので作成
+            ws.update('A1', [expected], value_input_option='USER_ENTERED')
+            logger.info(f"ヘッダー行を作成しました: {sheet_name}")
+    except Exception as e:
+        logger.warning(f"ヘッダー行確認エラー ({sheet_name}): {e}")
+
+
+def _invalidate_cache(sheet_name: str = None):
+    """キャッシュを無効化する"""
+    if sheet_name:
+        _worksheet_cache.pop(sheet_name, None)
+    else:
+        _worksheet_cache.clear()
+        _client_cache["client"] = None
+        _client_cache["expires"] = 0
 
 
 def _get_log_sheet() -> gspread.Worksheet:
@@ -61,6 +148,69 @@ def _get_order_sheet() -> gspread.Worksheet:
 
 def _get_profile_sheet() -> gspread.Worksheet:
     return _get_worksheet(PROFILE_SHEET_NAME)
+
+
+# ===== リトライ付き書き込み =====
+
+def _append_row_with_retry(sheet: gspread.Worksheet, row: list, max_retries: int = 3):
+    """リトライ付きで行を追加する
+
+    Google Sheets APIのレート制限やネットワークエラーに対応。
+    value_input_option='USER_ENTERED' を使用して正しく書き込む。
+    """
+    for attempt in range(max_retries):
+        try:
+            sheet.append_row(
+                row,
+                value_input_option='USER_ENTERED',
+            )
+            return
+        except gspread.exceptions.APIError as e:
+            if attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 1.5
+                logger.warning(
+                    f"Sheets API書き込みエラー (試行 {attempt + 1}/{max_retries}): {e}. "
+                    f"{wait_time}秒後にリトライ..."
+                )
+                time.sleep(wait_time)
+                # キャッシュを無効化して再取得を強制
+                _invalidate_cache()
+            else:
+                logger.error(f"Sheets API書き込み最終エラー: {e}")
+                raise
+        except Exception as e:
+            if attempt < max_retries - 1:
+                logger.warning(f"書き込みエラー (試行 {attempt + 1}/{max_retries}): {e}")
+                time.sleep(1)
+                _invalidate_cache()
+            else:
+                raise
+
+
+def _update_cell_with_retry(
+    sheet: gspread.Worksheet, row: int, col: int, value, max_retries: int = 3
+):
+    """リトライ付きでセルを更新する"""
+    for attempt in range(max_retries):
+        try:
+            sheet.update_cell(row, col, value)
+            return
+        except gspread.exceptions.APIError as e:
+            if attempt < max_retries - 1:
+                wait_time = (attempt + 1) * 1.5
+                logger.warning(
+                    f"セル更新エラー (試行 {attempt + 1}/{max_retries}): {e}. "
+                    f"{wait_time}秒後にリトライ..."
+                )
+                time.sleep(wait_time)
+            else:
+                logger.error(f"セル更新最終エラー: {e}")
+                raise
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(1)
+            else:
+                raise
 
 
 # ===== 注文操作 =====
@@ -82,7 +232,7 @@ def add_order(data: dict):
         data.get("created_at", ""),
     ]
 
-    sheet.append_row(row, table_range="A1")
+    _append_row_with_retry(sheet, row)
     logger.info(f"注文追加完了: order_id={data.get('order_id')}")
 
 
@@ -109,7 +259,7 @@ def add_diagnosis(data: dict):
         False,  # purchased フラグ
     ]
 
-    sheet.append_row(row, table_range="A1")
+    _append_row_with_retry(sheet, row)
     logger.info(f"診断ログ追加完了: diagnosis_id={data.get('diagnosis_id')}")
 
 
@@ -127,15 +277,16 @@ def update_diagnosis(diagnosis_id: str, stones: str, product_slug: str):
 
     try:
         stones_col = headers.index("stones") + 1
-        sheet.update_cell(row, stones_col, stones)
+        _update_cell_with_retry(sheet, row, stones_col, stones)
     except ValueError:
         logger.warning("stonesカラムが見つかりません")
 
-    try:
-        slug_col = headers.index("product_slug") + 1
-        sheet.update_cell(row, slug_col, product_slug)
-    except ValueError:
-        logger.warning("product_slugカラムが見つかりません")
+    if product_slug:
+        try:
+            slug_col = headers.index("product_slug") + 1
+            _update_cell_with_retry(sheet, row, slug_col, product_slug)
+        except ValueError:
+            logger.warning("product_slugカラムが見つかりません")
 
 
 def mark_purchased(diagnosis_id: str):
@@ -152,7 +303,7 @@ def mark_purchased(diagnosis_id: str):
 
     try:
         col_index = headers.index("purchased") + 1
-        sheet.update_cell(row, col_index, True)
+        _update_cell_with_retry(sheet, row, col_index, True)
     except ValueError:
         logger.warning("purchasedカラムが見つかりません")
 
@@ -212,7 +363,7 @@ def upsert_profile(profile: dict):
 
     def set_cell(col_name: str, value):
         if col_name in col_index:
-            ws.update_cell(row, col_index[col_name], value)
+            _update_cell_with_retry(ws, row, col_index[col_name], value)
 
     set_cell("user_id", user_id)
     set_cell("gender", profile.get("gender", ""))
