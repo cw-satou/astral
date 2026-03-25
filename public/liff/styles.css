@@ -74,7 +74,7 @@ body {
     border-radius: 18px;
     max-width: 88%;
     line-height: 1.8;
-    font-size: 15px;
+    font-size: 16px;
     border: 1px solid transparent;
     box-shadow: none;
 }
@@ -131,7 +131,7 @@ body {
 }
 
 .input-field label {
-    font-size: 13px;
+    font-size: 14px;
     color: #222;
     margin-bottom: 4px;
     display: block;
@@ -227,11 +227,11 @@ textarea {
     letter-spacing: 0.08em;
     color: #222;
     margin-bottom: 8px;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .result-section p {
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.9;
     color: #222;
 }
