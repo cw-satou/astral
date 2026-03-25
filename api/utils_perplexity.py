@@ -145,16 +145,19 @@ SELECTABLE_STONES = "\n".join([
 # ===== プロンプト定義 =====
 
 SYSTEM_PROMPT = f"""
-【出力形式の絶対ルール】
-1. JSON形式のみを出力すること。Markdownのコードブロックは不要。
-2. 引用表記（[1]など）は削除すること。
-5. 各セクションは指定文字数を目安に、過不足なく簡潔に書いてください。
-6. 【】のような見出しマークは一切使わず、自然な文章だけで書いてください。
-7. 重要な箇所は**で囲って強調してください。
-8. 全体で日本語で500文字を超えないようにしてください。
-9. 「。」の後には必ず改行を2つ入れて読みやすいようにしてください。
-11. 出力する文章はすべて日本語で書き、英単語の星座名やエレメント名
-    （Gemini, fire など）は使わず、日本語の表現に言い換えてください。
+【絶対ルール】
+1. 出力はすべて日本語のみ。英語は一切使用禁止。
+   • 星座名: Gemini→双子座、Aries→牡羊座 のように日本語に変換
+   • エレメント: fire→火、earth→地、wind→風、water→水
+   • テーマ: love→恋愛、heal→癒し、action→行動、intuition→直感
+   • その他あらゆる英単語も日本語に置き換えてください
+2. JSON形式のみを出力。Markdownのコードブロックや引用表記([1]など)は不要。
+3. 【】のような見出しマークは使わず、自然な文章で書く。
+4. 重要な言葉は**で囲って強調。
+5. 「。」の後には改行を2つ入れる。
+6. 一人の人間に語りかけるように、温かく、具体的で、情景が浮かぶ表現で書く。
+7. 抑象的で情緒的な文体（いわゆる「占い師口調」）で、読み手の心に響くように。
+8. 各セクションは指定文字数を目安に、情景描写と具体的アドバイスをバランスよく。
 
 【重要なルール】
 選べる天然石は必ず以下のいずれか1つにしてください。
@@ -541,22 +544,26 @@ def create_user_prompt(
 
 【出力JSONスキーマ】
 {{
-"destiny_map": "人生のテーマや運命の流れを120文字程度で説明。重要な言葉は**で強調。",
-"past": "生まれ持った資質やこれまでの流れを80文字程度で説明。",
-"present_future": "今の課題とこれからのテーマを120文字程度で説明。",
-"element_diagnosis": "4エレメントのバランスとアドバイスを80文字程度で説明。",
-"oracle_message": "引いたカード「{oracle_result['card']['name']}」の{position_str}のメッセージを100文字程度で説明。",
-"bracelet_proposal": "ブレスレットがどのような願いをサポートするか80文字程度で説明。",
-"stone_support_message": "ユーザーの悩みと人生テーマに対して石がどのようにサポートするか120文字程度で説明。必ず日本語のみで書き、英単語の星座名やエレメント名は使わないこと。",
+"destiny_map": "人生のテーマや運命の流れを200文字程度で説明。情景的な導入（例：「あなたの生まれた日、星たちは…」）から始め、運命の大きな流れを詩的に読み解く。重要な言葉は**で強調。",
+"past": "生まれ持った資質やこれまでの流れを150文字程度で説明。「幼い頃のあなたは…」のように具体的に語りかける。",
+"present_future": "今の課題とこれからのテーマを200文字程度で説明。「いまのあなたに必要なのは…」と具体的な行動指針を含める。",
+"element_diagnosis": "4エレメントのバランスを150文字程度で解説。「火のエレメントが強く、風が不足しているあなたは…」のように、バランスが日常にどう影響するか具体例を示す。",
+"oracle_message": "引いたカード「{oracle_result['card']['name']}」の{position_str}のメッセージを150文字程度で。カードが語りかけるような口調で、「このカードはあなたに…」と導く。",
+"bracelet_proposal": "ブレスレットがどのような願いをサポートするか150文字程度で。「この石を身につけることで、日常の中で…」のように具体的なシーンを描く。",
+"stone_support_message": "ユーザーの悩みと人生テーマに対して石がどのようにサポートするか200文字程度で。石の特性とユーザーの課題を結びつけ、「この石はあなたの心の…」と擬人化して語る。必ず日本語のみ。",
+"daily_advice": "今日からできる具体的なアクションを3つ、それぞれ30文字程度で。カンマ区切り。例：朝日を浴びる、深呼吸をする、など。",
+"lucky_color": "今日のラッキーカラー（1色、日本語）",
+"affirmation": "あなたへのアファメーション（肯定の言葉）を50文字程度で。「私は…」で始まる自己肯定文。",
 "chosen_stone": {{
-  "name": "選ばれた石の名前",
-  "reason": "ホロスコープ・悩み・カードの観点からその石が必要な理由"
+  "name": "選ばれた石の名前（日本語）",
+  "reason": "ホロスコープ・悩み・カードの観点からその石が必要な理由を1––２文で"
 }},
-"element": "ユーザーに必要なエレメント（fire/earth/wind/water）",
-"theme": "テーマ (love/heal/action/intuition)"
+"element": "ユーザーに必要なエレメント（火/地/風/水）",
+"theme": "テーマ（恋愛/癒し/行動/直感）"
 }}
 
-必ずJSON形式のみで出力してください。JSON以外のテキストや説明は一切不要です。
+必ずJSON形式のみで出力。JSON以外のテキストや説明は一切不要。
+英語が一文字でも含まれていたらやり直し。
 """
 
 
@@ -610,7 +617,7 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
     """
     client = _get_client()
     if not client:
-        return {"error": "Perplexity API Key not configured"}
+        return {"error": "鑑定APIの設定が完了していません"}
 
     # オラクルカードを引く
     card = random.choice(CRYSTAL_ORACLE_CARDS)
@@ -696,28 +703,52 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
         result["element_lack"] = chart_info["element_lack"]
 
         # オラクルカード情報
+        from api.utils_image import (
+            generate_oracle_card_url,
+            generate_destiny_scene_url,
+            generate_element_balance_url,
+            generate_stone_bracelet_url,
+        )
+
+        # diagnosis_id用のシードキー（同じ診断なら同じ画像）
+        seed_base = f"{user_input.get('birth', {}).get('date', '')}-{card['name']}"
+
         result["oracle_card"] = {
             "name": card["name"],
             "meaning": meaning,
             "is_upright": is_upright,
-            "image_url": (
-                "https://image.pollinations.ai/prompt/"
-                + (
-                    "oracle card art of " + card["en"]
-                    + ", mystical glowing gemstone, divine light, "
-                    "intricate golden border, fantasy art, tarot style, high quality, 8k"
-                ).replace(" ", "%20")
-                + f"?width=400&height=600&seed={random.randint(0, 9999)}"
+            "image_url": generate_oracle_card_url(
+                card["en"], seed_key=f"oracle-{seed_base}"
             ),
         }
 
-        # 画像プロンプト
-        stone_names_ja = ", ".join([s["name"] for s in result["stones_for_user"]])
-        result["image_prompt"] = (
-            f"luxury gemstone bracelet, {stone_names_ja}, "
-            "japanese spiritual jewelry, white background, "
-            "product photography, high quality"
-        )
+        # 各セクション用のイメージ画像を生成（シード固定で再生成防止）
+        chart_info_for_img = build_chart_data(user_input, chart_data)
+        main_stone_name = result["stones_main"][0]["name"]
+        sub_stone_names = [s["name"] for s in result.get("stones_sub", [])]
+
+        result["images"] = {
+            "destiny_scene": generate_destiny_scene_url(
+                sun_sign_ja=chart_info_for_img["sun_ja"],
+                moon_sign_ja=chart_info_for_img["moon_ja"],
+                element_lack_ja=chart_info_for_img["element_lack_ja"],
+                stone_name=main_stone_name,
+                concerns=user_input.get("concerns"),
+                seed_key=f"destiny-{seed_base}",
+            ),
+            "element_balance": generate_element_balance_url(
+                fire=chart_info_for_img["fire"],
+                earth=chart_info_for_img["earth"],
+                wind=chart_info_for_img["wind"],
+                water=chart_info_for_img["water"],
+                seed_key=f"element-{seed_base}",
+            ),
+            "bracelet": generate_stone_bracelet_url(
+                main_stone=main_stone_name,
+                sub_stones=sub_stone_names,
+                seed_key=f"bracelet-{seed_base}",
+            ),
+        }
 
         # 商品候補
         main = result["stones_main"][0]["name"]

@@ -174,8 +174,7 @@ def diagnose():
     except Exception as e:
         logger.exception("診断処理中にエラーが発生")
         return jsonify({
-            "error": "Internal Server Error",
-            "message": str(e),
+            "error": "診断処理中にエラーが発生しました",
         }), 500
 
 
@@ -238,8 +237,7 @@ def build_bracelet():
     except Exception as e:
         logger.exception("ブレスレット生成エラー")
         return jsonify({
-            "error": "Bracelet Build Error",
-            "message": str(e),
+            "error": "ブレスレット生成中にエラーが発生しました",
         }), 500
 
 

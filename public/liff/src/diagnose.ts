@@ -143,13 +143,16 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
   const chatBox = document.getElementById('chatBox');
   if (!chatBox) return;
 
+  // 画像情報
+  const images = (result.images || {}) as Record<string, string>;
+
   const sections = [
-    { key: 'destiny_map', title: '運命の地図', text: result.destiny_map as string, lead: 'まずは、あなた全体のテーマや流れを地図のように見ていきますね。' },
-    { key: 'past', title: 'これまでの流れ', text: result.past as string, lead: '次に、あなたがこれまでどんな資質や流れを持って歩いてきたのかを読み解いていきます。' },
-    { key: 'present_future', title: '今と未来への流れ', text: result.present_future as string, lead: '次に、あなたの今とこれからの流れを見ていきます。' },
-    { key: 'element_diagnosis', title: 'エレメントのバランス', text: result.element_diagnosis as string, lead: '次は、火・地・風・水のバランスから見ていきます。' },
-    { key: 'bracelet_proposal', title: '石の選び方と意図', text: result.bracelet_proposal as string, lead: 'ここからは石の組み合わせの意図を見ていきます。' },
-    { key: 'stone_support_message', title: '石からのサポートメッセージ', text: result.stone_support_message as string, lead: '石たちのメッセージをお伝えします。' },
+    { key: 'destiny_map', title: '✨ 運命の地図', text: result.destiny_map as string, lead: 'まずは、あなた全体のテーマや流れを地図のように見ていきますね。', image: images.destiny_scene },
+    { key: 'past', title: '🌙 これまでの流れ', text: result.past as string, lead: '次に、あなたがこれまでどんな資質や流れを持って歩いてきたのかを読み解いていきます。' },
+    { key: 'present_future', title: '☀️ 今と未来への流れ', text: result.present_future as string, lead: '次に、あなたの今とこれからの流れを見ていきます。' },
+    { key: 'element_diagnosis', title: '🔥 エレメントのバランス', text: result.element_diagnosis as string, lead: '次は、火・地・風・水のバランスから見ていきます。', image: images.element_balance },
+    { key: 'bracelet_proposal', title: '💎 石の選び方と意図', text: result.bracelet_proposal as string, lead: 'ここからは石の組み合わせの意図を見ていきます。', image: images.bracelet },
+    { key: 'stone_support_message', title: '💐 石からのサポートメッセージ', text: result.stone_support_message as string, lead: '石たちのメッセージをお伝えします。' },
   ].filter(sec => sec.text);
 
   let currentIndex = 0;
@@ -158,6 +161,21 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
 
   async function showCurrentSection(): Promise<void> {
     if (currentIndex >= sections.length) {
+      // 追加セクション: アファメーション、ラッキーカラー、アドバイス
+      const extras: string[] = [];
+      if (result.affirmation) {
+        extras.push(`\n✨ あなたへの言葉\n${result.affirmation}`);
+      }
+      if (result.lucky_color) {
+        extras.push(`🌈 ラッキーカラー: **${result.lucky_color}**`);
+      }
+      if (result.daily_advice) {
+        extras.push(`\n📝 今日からできること\n${(result.daily_advice as string).split(',').map((a: string) => `・ ${a.trim()}`).join('\n')}`);
+      }
+      if (extras.length > 0) {
+        await addMsg(extras.join('\n\n'), false);
+      }
+
       await addMsg('ここまでの流れから、今のあなたを整える石が見えてきました。', false);
       await addMsg(`今回の診断であなたの軸となる石は **${stoneName}** です。`, false);
       await addMsg('もしこの石たちと一緒に歩いてみたいと感じたなら、あなたのためのブレスレットとして形にしてみましょう。', false);
@@ -179,8 +197,20 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
     inner.className = 'result-section';
     const h3 = document.createElement('h3');
     h3.textContent = sec.title;
+
+    // セクションに対応するイメージ画像があれば表示
+    if (sec.image) {
+      const img = document.createElement('img');
+      img.src = sec.image;
+      img.style.cssText = 'width:100%;border-radius:12px;margin:8px 0;';
+      img.alt = sec.title;
+      inner.appendChild(h3);
+      inner.appendChild(img);
+    } else {
+      inner.appendChild(h3);
+    }
+
     const p = document.createElement('p');
-    inner.appendChild(h3);
     inner.appendChild(p);
     wrapper.appendChild(inner);
     chatBox.appendChild(wrapper);

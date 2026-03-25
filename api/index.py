@@ -39,11 +39,11 @@ def fortune_detail():
     diagnosis_id = data.get("diagnosis_id")
 
     if not diagnosis_id:
-        return jsonify({"error": "diagnosis_id is required"}), 400
+        return jsonify({"error": "診断IDが必要です"}), 400
 
     saved = get_diagnosis(diagnosis_id)
     if not saved:
-        return jsonify({"error": "Diagnosis not found"}), 404
+        return jsonify({"error": "診断結果が見つかりません"}), 404
 
     base_url = os.environ.get("SHOP_BASE_URL", "").strip()
     if not base_url:
@@ -123,27 +123,27 @@ def route_profile():
         body = request.get_json(force=True, silent=True) or {}
         user_id = body.get("user_id")
         if not user_id:
-            return jsonify({"error": "user_id is required"}), 400
+            return jsonify({"error": "ユーザーIDが必要です"}), 400
         try:
             upsert_profile(body)
             profile = get_profile(user_id)
             return jsonify(profile or {})
         except Exception as e:
             logger.exception("プロフィール保存エラー")
-            return jsonify({"error": "Failed to save profile"}), 500
+            return jsonify({"error": "プロフィールの保存に失敗しました"}), 500
 
     # GET
     user_id = request.args.get("user_id")
     if not user_id:
-        return jsonify({"error": "user_id is required"}), 400
+        return jsonify({"error": "ユーザーIDが必要です"}), 400
     try:
         profile = get_profile(user_id)
         if not profile:
-            return jsonify({"error": "not found"}), 404
+            return jsonify({"error": "プロフィールが見つかりません"}), 404
         return jsonify(profile)
     except Exception as e:
         logger.exception("プロフィール取得エラー")
-        return jsonify({"error": "Failed to load profile"}), 500
+        return jsonify({"error": "プロフィールの読み込みに失敗しました"}), 500
 
 
 # ===== ヘルスチェック & フロントエンド =====
@@ -164,13 +164,13 @@ def index():
 
 @app.errorhandler(404)
 def not_found(e):
-    return jsonify({"error": "Not found"}), 404
+    return jsonify({"error": "ページが見つかりません"}), 404
 
 
 @app.errorhandler(500)
 def internal_error(e):
     logger.exception("Internal server error")
-    return jsonify({"error": "Internal server error"}), 500
+    return jsonify({"error": "サーバーエラーが発生しました"}), 500
 
 
 if __name__ == '__main__':
