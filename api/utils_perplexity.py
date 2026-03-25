@@ -702,24 +702,29 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
         chart_info = build_chart_data(user_input, chart_data)
         result["element_lack"] = chart_info["element_lack"]
 
-        # オラクルカード情報
+        # オラクルカード情報と画像生成
         from api.utils_image import (
-            generate_oracle_card_url,
-            generate_destiny_scene_url,
-            generate_element_balance_url,
-            generate_stone_bracelet_url,
+            get_stone_colors,
+            generate_oracle_card_image,
+            generate_destiny_scene,
+            generate_element_balance,
+            generate_bracelet_image,
         )
 
         # diagnosis_id用のシードキー（同じ診断なら同じ画像）
         seed_base = f"{user_input.get('birth', {}).get('date', '')}-{card['name']}"
 
+        # オラクルカード画像生成
+        oracle_image = generate_oracle_card_image(
+            card["name"], card["en"], is_upright,
+            seed_key=f"oracle-{seed_base}"
+        )
         result["oracle_card"] = {
             "name": card["name"],
             "meaning": meaning,
             "is_upright": is_upright,
-            "image_url": generate_oracle_card_url(
-                card["en"], seed_key=f"oracle-{seed_base}"
-            ),
+            "colors": get_stone_colors(card["name"]),
+            "image_url": oracle_image,  # base64データURIまたはNone
         }
 
         # 各セクション用のイメージ画像を生成（シード固定で再生成防止）
@@ -727,23 +732,22 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
         main_stone_name = result["stones_main"][0]["name"]
         sub_stone_names = [s["name"] for s in result.get("stones_sub", [])]
 
+        result["stone_colors"] = get_stone_colors(main_stone_name)
+
         result["images"] = {
-            "destiny_scene": generate_destiny_scene_url(
-                sun_sign_ja=chart_info_for_img["sun_ja"],
-                moon_sign_ja=chart_info_for_img["moon_ja"],
+            "destiny_scene": generate_destiny_scene(
                 element_lack_ja=chart_info_for_img["element_lack_ja"],
                 stone_name=main_stone_name,
-                concerns=user_input.get("concerns"),
                 seed_key=f"destiny-{seed_base}",
             ),
-            "element_balance": generate_element_balance_url(
+            "element_balance": generate_element_balance(
                 fire=chart_info_for_img["fire"],
                 earth=chart_info_for_img["earth"],
                 wind=chart_info_for_img["wind"],
                 water=chart_info_for_img["water"],
                 seed_key=f"element-{seed_base}",
             ),
-            "bracelet": generate_stone_bracelet_url(
+            "bracelet": generate_bracelet_image(
                 main_stone=main_stone_name,
                 sub_stones=sub_stone_names,
                 seed_key=f"bracelet-{seed_base}",

@@ -44,9 +44,11 @@ export function typeText(element: HTMLElement, text: string, speed = 40): Promis
   });
 }
 
-/** メッセージをチャットに追加（キュー制御付き） */
+/** メッセージをチャットに追加（キュー制御付き、メッセージ間に1秒の間） */
 export function addMsg(text: string, isUser = false): Promise<void> {
-  state.messageQueue = state.messageQueue.then(() => renderMessage(text, isUser));
+  state.messageQueue = state.messageQueue
+    .then(() => new Promise<void>(r => setTimeout(r, isUser ? 300 : 1000)))
+    .then(() => renderMessage(text, isUser));
   return state.messageQueue;
 }
 

@@ -1,182 +1,197 @@
-"""画像生成・キャッシュモジュール
+"""画像生成モジュール
 
-診断結果に合わせたイメージ画像を生成し、Google Sheetsに保存して再利用する。
-Pollinations.ai の無料画像生成APIを使用。
+Gemini API（gemini-3.1-flash-image-preview）を使って診断結果に合わせた
+イメージ画像を生成する。生成した画像はbase64エンコードでフロントエンドに返す。
+同じシードキーに基づくキャッシュで再生成を防止する。
+
+環境変数:
+    GEMINI_API_KEY: Google AI Studio / Gemini APIのAPIキー
 """
 
+import os
+import json
+import base64
 import hashlib
 import logging
-import random
-from urllib.parse import quote
+import requests
+import time
 
 logger = logging.getLogger(__name__)
 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = "gemini-3.1-flash-image-preview"
+GEMINI_ENDPOINT = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 
-def _build_seed(key: str) -> int:
-    """キーから固定のシード値を生成する（同じキーなら同じ画像）"""
-    return int(hashlib.md5(key.encode()).hexdigest()[:8], 16) % 100000
-
-
-def generate_oracle_card_url(card_name_en: str, seed_key: str = "") -> str:
-    """オラクルカード画像のURLを生成する
-
-    Args:
-        card_name_en: カードの英語名（プロンプト用）
-        seed_key: 固定シード生成用キー（空ならランダム）
-
-    Returns:
-        画像URL
-    """
-    seed = _build_seed(seed_key) if seed_key else random.randint(0, 99999)
-
-    prompt = (
-        f"oracle card art of {card_name_en}, "
-        "mystical glowing gemstone on dark velvet background, "
-        "sacred geometry, divine golden light rays, "
-        "ornate art nouveau golden border frame, "
-        "fantasy illustration, tarot card style, "
-        "ethereal atmosphere, ultra detailed, 8k quality"
-    )
-
-    return (
-        "https://image.pollinations.ai/prompt/"
-        + quote(prompt, safe='')
-        + f"?width=400&height=600&seed={seed}&nologo=true"
-    )
+# インメモリキャッシュ（Vercelサーバーレスの寿命内で再利用）
+_image_cache: dict[str, str] = {}
+CACHE_MAX_SIZE = 20  # メモリ節約のため最大20枚
 
 
-def generate_destiny_scene_url(
-    sun_sign_ja: str,
-    moon_sign_ja: str,
-    element_lack_ja: str,
-    stone_name: str,
-    concerns: list[str] | None = None,
-    seed_key: str = "",
-) -> str:
-    """運命の地図シーン画像のURLを生成する
+# 石ごとのカラーテーマ（CSSフォールバック用）
+STONE_COLORS = {
+    "ラピスラズリ": {"primary": "#1a237e", "secondary": "#5c6bc0", "accent": "#ffd54f", "gradient": "linear-gradient(135deg, #0d1b4a 0%, #1a237e 40%, #5c6bc0 100%)"},
+    "カーネリアン・サードニクス": {"primary": "#bf360c", "secondary": "#ff6e40", "accent": "#ffd180", "gradient": "linear-gradient(135deg, #4a1a0a 0%, #bf360c 40%, #ff6e40 100%)"},
+    "マラカイト": {"primary": "#1b5e20", "secondary": "#66bb6a", "accent": "#c8e6c9", "gradient": "linear-gradient(135deg, #0a2e0f 0%, #1b5e20 40%, #66bb6a 100%)"},
+    "アメジスト": {"primary": "#4a148c", "secondary": "#ab47bc", "accent": "#e1bee7", "gradient": "linear-gradient(135deg, #1a0533 0%, #4a148c 40%, #ab47bc 100%)"},
+    "アイリスクォーツ": {"primary": "#37474f", "secondary": "#90a4ae", "accent": "#e0f7fa", "gradient": "linear-gradient(135deg, #263238 0%, #546e7a 30%, #e0f7fa 60%, #f3e5f5 100%)"},
+}
+DEFAULT_COLORS = {"primary": "#37474f", "secondary": "#78909c", "accent": "#cfd8dc", "gradient": "linear-gradient(135deg, #1c313a 0%, #37474f 40%, #78909c 100%)"}
 
-    ユーザーの星座配置に合わせた幻想的な風景画像。
+
+def get_stone_colors(stone_name: str) -> dict:
+    """石のカラーテーマを取得"""
+    return STONE_COLORS.get(stone_name, DEFAULT_COLORS)
+
+
+def _generate_image_gemini(prompt: str, cache_key: str = "") -> str | None:
+    """Gemini APIで画像を生成し、base64データURIを返す
 
     Args:
-        sun_sign_ja: 太陽星座（日本語）
-        moon_sign_ja: 月星座（日本語）
-        element_lack_ja: 不足エレメント（日本語）
-        stone_name: メイン石の名前
-        concerns: 悩みカテゴリ
-        seed_key: 固定シード生成用キー
+        prompt: 画像生成プロンプト（英語推奨）
+        cache_key: キャッシュキー（空ならキャッシュしない）
 
     Returns:
-        画像URL
+        "data:image/png;base64,..." 形式のデータURI。失敗時はNone。
     """
-    seed = _build_seed(seed_key) if seed_key else random.randint(0, 99999)
+    if not GEMINI_API_KEY:
+        logger.warning("GEMINI_API_KEY が設定されていません。画像生成をスキップします。")
+        return None
 
-    # エレメントに合わせた風景モチーフ
-    element_scene = {
-        "火": "volcanic landscape with warm aurora, golden flames dancing in twilight sky",
-        "地": "ancient forest with crystal cave, moss covered stones and earth energy",
-        "風": "floating sky islands with swirling clouds, ethereal wind currents and starlight",
-        "水": "mystical underwater temple with bioluminescent coral, moonlit ocean surface",
+    # キャッシュチェック
+    if cache_key and cache_key in _image_cache:
+        logger.info(f"画像キャッシュヒット: {cache_key}")
+        return _image_cache[cache_key]
+
+    try:
+        resp = requests.post(
+            GEMINI_ENDPOINT,
+            headers={
+                "x-goog-api-key": GEMINI_API_KEY,
+                "Content-Type": "application/json",
+            },
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "responseModalities": ["IMAGE"],
+                    "imageConfig": {
+                        "aspectRatio": "16:9",
+                        "imageSize": "1K",
+                    },
+                },
+            },
+            timeout=30,
+        )
+
+        if resp.status_code != 200:
+            logger.warning(f"Gemini画像生成エラー: HTTP {resp.status_code} - {resp.text[:200]}")
+            return None
+
+        data = resp.json()
+        candidates = data.get("candidates", [])
+        if not candidates:
+            logger.warning("Gemini画像生成: 候補なし")
+            return None
+
+        for part in candidates[0].get("content", {}).get("parts", []):
+            inline_data = part.get("inlineData")
+            if inline_data and inline_data.get("data"):
+                mime = inline_data.get("mimeType", "image/png")
+                b64 = inline_data["data"]
+                data_uri = f"data:{mime};base64,{b64}"
+
+                # キャッシュ保存
+                if cache_key:
+                    if len(_image_cache) >= CACHE_MAX_SIZE:
+                        # 最古のエントリを削除
+                        oldest = next(iter(_image_cache))
+                        del _image_cache[oldest]
+                    _image_cache[cache_key] = data_uri
+
+                return data_uri
+
+        logger.warning("Gemini画像生成: 画像データなし")
+        return None
+
+    except requests.Timeout:
+        logger.warning("Gemini画像生成: タイムアウト")
+        return None
+    except Exception as e:
+        logger.warning(f"Gemini画像生成エラー: {e}")
+        return None
+
+
+def _build_cache_key(prefix: str, seed: str) -> str:
+    """キャッシュキーを構築"""
+    return f"{prefix}-{hashlib.md5(seed.encode()).hexdigest()[:12]}"
+
+
+def generate_oracle_card_image(card_name: str, card_name_en: str, is_upright: bool, seed_key: str = "") -> str | None:
+    """オラクルカード画像を生成する"""
+    position = "upright position, radiating light" if is_upright else "reversed position, with shadow"
+    prompt = (
+        f"A mystical oracle tarot card featuring a {card_name_en} gemstone crystal, "
+        f"{position}. Ornate golden art nouveau border frame with intricate patterns. "
+        "Dark velvet background with sacred geometry. "
+        "Ethereal divine light rays emanating from the crystal. "
+        "Fantasy tarot card illustration, highly detailed, magical atmosphere. "
+        "No text on the card."
+    )
+    cache = _build_cache_key("oracle", seed_key) if seed_key else ""
+    return _generate_image_gemini(prompt, cache)
+
+
+def generate_destiny_scene(element_lack_ja: str, stone_name: str, seed_key: str = "") -> str | None:
+    """運命の地図シーン画像を生成する"""
+    element_scenes = {
+        "火": "volcanic landscape with warm aurora and golden flames dancing across a twilight sky, ember particles",
+        "地": "ancient crystal cave with glowing minerals, moss-covered stones surrounded by earthen energy and roots",
+        "風": "floating sky islands among swirling clouds with ethereal wind currents and shimmering starlight",
+        "水": "moonlit underwater temple with bioluminescent coral and jellyfish, calm ocean surface reflecting stars",
     }
-
-    scene = element_scene.get(element_lack_ja, "mystical starry landscape with cosmic energy")
-
-    # 石のカラーを反映
-    stone_color = {
-        "ラピスラズリ": "deep royal blue and gold",
-        "カーネリアン・サードニクス": "warm orange and amber",
-        "マラカイト": "vivid emerald green swirls",
-        "アメジスト": "deep purple and violet light",
-        "アイリスクォーツ": "rainbow prismatic light through clear crystal",
-    }
-
-    color = stone_color.get(stone_name, "mystical gemstone glow")
+    scene = element_scenes.get(element_lack_ja, "cosmic nebula with swirling galaxies and constellation patterns")
 
     prompt = (
-        f"{scene}, "
-        f"{color} gemstone energy emanating from center, "
-        "fantasy art, ethereal atmosphere, "
-        "cosmic spiritual landscape, constellation patterns, "
-        "no text, no people, dreamlike, "
-        "digital painting, artstation quality, ultra detailed"
+        f"A breathtaking fantasy landscape: {scene}. "
+        f"A glowing {stone_name} gemstone crystal floating in the center, emanating mystical energy. "
+        "Dreamlike ethereal atmosphere, constellation patterns in the sky. "
+        "Digital painting, artstation quality, ultra detailed, no text, no people."
     )
-
-    return (
-        "https://image.pollinations.ai/prompt/"
-        + quote(prompt, safe='')
-        + f"?width=600&height=400&seed={seed}&nologo=true"
-    )
+    cache = _build_cache_key("destiny", seed_key) if seed_key else ""
+    return _generate_image_gemini(prompt, cache)
 
 
-def generate_element_balance_url(
-    fire: int, earth: int, wind: int, water: int,
-    seed_key: str = "",
-) -> str:
-    """エレメントバランス画像のURLを生成する
-
-    4元素のバランスを視覚化する抽象画。
-
-    Returns:
-        画像URL
-    """
-    seed = _build_seed(seed_key) if seed_key else random.randint(0, 99999)
-
-    # 最も強いエレメントを強調
-    dominant = max(
-        [("fire", fire), ("earth", earth), ("wind", wind), ("water", water)],
-        key=lambda x: x[1]
-    )[0]
-
-    dominant_mood = {
-        "fire": "fiery red and gold energy dominant, passionate swirling flames",
-        "earth": "earthy brown and green energy dominant, crystal formations growing",
-        "wind": "airy silver and white energy dominant, swirling wind currents",
-        "water": "oceanic blue and teal energy dominant, flowing water streams",
+def generate_element_balance(fire: int, earth: int, wind: int, water: int, seed_key: str = "") -> str | None:
+    """エレメントバランス画像を生成する"""
+    dominant = max([("fire", fire), ("earth", earth), ("wind", wind), ("water", water)], key=lambda x: x[1])[0]
+    moods = {
+        "fire": "fiery red and gold energy orb glowing intensely",
+        "earth": "earthy brown and emerald green crystal formation",
+        "wind": "silver and white swirling wind current with sparkles",
+        "water": "deep blue and teal flowing water stream with moonlight",
     }
+    dominant_mood = moods.get(dominant, "balanced cosmic energy")
 
     prompt = (
-        "four elements balance visualization, "
-        "fire earth wind water energy orbs floating in cosmic space, "
-        f"{dominant_mood.get(dominant, 'balanced cosmic energy')}, "
-        "sacred geometry mandala background, "
-        "abstract spiritual art, glowing particles, "
-        "no text, symmetrical composition, "
-        "digital art, ethereal, 8k quality"
+        "Four elemental energy orbs floating in a cosmic mandala: "
+        f"fire (red), earth (green), wind (white), water (blue). {dominant_mood} is dominant and largest. "
+        "Sacred geometry background, abstract spiritual visualization, "
+        "glowing particles, symmetrical composition, ethereal digital art, no text."
     )
-
-    return (
-        "https://image.pollinations.ai/prompt/"
-        + quote(prompt, safe='')
-        + f"?width=600&height=400&seed={seed}&nologo=true"
-    )
+    cache = _build_cache_key("element", seed_key) if seed_key else ""
+    return _generate_image_gemini(prompt, cache)
 
 
-def generate_stone_bracelet_url(
-    main_stone: str,
-    sub_stones: list[str] | None = None,
-    seed_key: str = "",
-) -> str:
-    """ブレスレット提案画像のURLを生成する
-
-    Returns:
-        画像URL
-    """
-    seed = _build_seed(seed_key) if seed_key else random.randint(0, 99999)
-
-    stones_text = main_stone
+def generate_bracelet_image(main_stone: str, sub_stones: list[str] | None = None, seed_key: str = "") -> str | None:
+    """ブレスレット提案画像を生成する"""
+    stones_desc = main_stone
     if sub_stones:
-        stones_text += " with " + " and ".join(sub_stones)
+        stones_desc += " with " + " and ".join(sub_stones) + " accent beads"
 
     prompt = (
-        f"luxury handcrafted gemstone bracelet featuring {stones_text} beads, "
-        "elegant Japanese spiritual jewelry, "
-        "soft studio lighting on white silk fabric, "
-        "close-up product photography, "
-        "bokeh background with warm light, "
-        "high-end jewelry catalog style, ultra detailed, 8k"
+        f"A luxury handcrafted gemstone bracelet featuring polished {stones_desc}. "
+        "Elegant Japanese spiritual jewelry on white silk fabric. "
+        "Soft warm studio lighting, shallow depth of field with bokeh. "
+        "High-end jewelry product photography, close-up, ultra detailed, no text."
     )
-
-    return (
-        "https://image.pollinations.ai/prompt/"
-        + quote(prompt, safe='')
-        + f"?width=600&height=400&seed={seed}&nologo=true"
-    )
+    cache = _build_cache_key("bracelet", seed_key) if seed_key else ""
+    return _generate_image_gemini(prompt, cache)

@@ -86,22 +86,34 @@ export async function executeDiagnose(): Promise<void> {
 }
 
 /** オラクルカードを表示 */
-async function showOracleCard(card: { image_url: string; name: string; is_upright: boolean }): Promise<void> {
+async function showOracleCard(card: { image_url?: string; name: string; is_upright: boolean; colors?: Record<string, string> }): Promise<void> {
   await addMsg('カードをシャッフルしています…', false);
   await new Promise(r => setTimeout(r, 1200));
   await addMsg('1枚引きます…', false);
   await new Promise(r => setTimeout(r, 1000));
 
+  // 画像があれば表示、なければCSSグラデーションカード
+  const colors = card.colors || {};
+  const gradient = colors.gradient || 'linear-gradient(135deg, #1a0533 0%, #4a148c 40%, #ab47bc 100%)';
+  const hasImage = card.image_url && card.image_url.length > 10;
+
+  const imageHtml = hasImage
+    ? `<img src="${card.image_url}" class="section-image" style="width:220px;margin:12px auto;display:block;border-radius:12px;" onload="this.classList.add('loaded')" onerror="this.parentElement.querySelector('.card-fallback').style.display='flex';this.style.display='none';">`
+    : '';
+
+  const fallbackStyle = hasImage ? 'display:none;' : 'display:flex;';
+
   const cardHtml = `
     <div class="msg bot">
       <div class="result-section" style="text-align:center;">
         <h3>🎴 オラクルカード</h3>
-        <img src="${card.image_url}"
-          class="section-image"
-          style="width:200px;margin:12px auto;display:block;"
-          onload="this.classList.add('loaded')"
-          onerror="this.style.display='none'">
-        <p style="font-size:16px;font-weight:bold;margin-top:8px;">
+        ${imageHtml}
+        <div class="card-fallback" style="${fallbackStyle}width:220px;height:320px;margin:12px auto;border-radius:16px;background:${gradient};align-items:center;justify-content:center;flex-direction:column;box-shadow:0 8px 24px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.15);border:2px solid rgba(255,215,0,0.4);">
+          <div style="font-size:48px;margin-bottom:12px;">🔮</div>
+          <div style="color:#fff;font-size:18px;font-weight:bold;text-shadow:0 2px 4px rgba(0,0,0,0.5);">${card.name}</div>
+          <div style="color:rgba(255,255,255,0.8);font-size:14px;margin-top:6px;">${card.is_upright ? '正位置' : '逆位置'}</div>
+        </div>
+        <p style="font-size:17px;font-weight:bold;margin-top:10px;">
           ${card.name} ${card.is_upright ? '（正位置）' : '（逆位置）'}
         </p>
       </div>

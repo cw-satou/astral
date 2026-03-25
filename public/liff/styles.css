@@ -147,7 +147,7 @@ body {
     background: #fff;
     border: 1px solid #ddd;
     color: #222;
-    font-size: 16px;
+    font-size: 17px;
 }
 
 textarea {
@@ -326,11 +326,13 @@ textarea {
 }
 
 .progress-bar {
-    padding: 8px;
+    padding: 8px 12px;
     font-size: 12px;
     text-align: center;
-    background: #f6f6f6;
-    border-bottom: 1px solid #ddd;
+    background: linear-gradient(135deg, #f8f6f2 0%, #f0ece6 100%);
+    border-bottom: 1px solid rgba(180, 160, 120, 0.2);
+    color: #7a6a5a;
+    letter-spacing: 0.05em;
 }
 
 /* セクション画像のフェードイン */
