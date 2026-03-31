@@ -826,7 +826,7 @@ ${fortuneText}`, false);
         return;
       }
       window.diagnosisId = json.diagnosis_id;
-      state.productCandidates = json.products || [];
+      state.productCandidates = json.recommendations || [];
       state.selectedProductIndex = state.productCandidates.length > 0 ? 0 : null;
       clearInterval(thinkingTimer);
       state.divinationResult = json;
@@ -892,7 +892,8 @@ ${fortuneText}`, false);
     setProgress(3, 4, "\u5C0E\u304D\u306E\u77F3\u3092\u9078\u5B9A");
     clearInputArea();
     const nameForDisplay = getUserNameForDisplay();
-    const stoneName = result.stone_name || (result.stones_for_user?.[0]?.name || "\u3042\u306A\u305F\u306E\u77F3");
+    const recommendations = result.recommendations || [];
+    const stoneName = result.stone_name || recommendations[0]?.stones?.[0] || "\u3042\u306A\u305F\u306E\u77F3";
     const chatBox = document.getElementById("chatBox");
     if (!chatBox)
       return;
@@ -936,9 +937,9 @@ ${result.daily_advice.split(",").map((a) => `\u30FB ${a.trim()}`).join("\n")}`);
 **${stoneName}**\u306E\u9759\u304B\u306A\u30A8\u30CD\u30EB\u30AE\u30FC\u304C\u3001\u3042\u306A\u305F\u672C\u6765\u306E\u30EA\u30BA\u30E0\u3092\u601D\u3044\u51FA\u3055\u305B\u3066\u304F\u308C\u308B\u306F\u305A\u3067\u3059\u3002`,
           false
         );
-        await addMsg("\u3082\u3057\u3053\u306E\u77F3\u305F\u3061\u3068\u4E00\u7DD2\u306B\u6B69\u3044\u3066\u307F\u305F\u3044\u3068\u611F\u3058\u305F\u306A\u3089\u3001\u3042\u306A\u305F\u306E\u305F\u3081\u306E\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u3068\u3057\u3066\u5F62\u306B\u3057\u3066\u307F\u307E\u3057\u3087\u3046\u3002", false);
+        await addMsg("\u3082\u3057\u3053\u306E\u77F3\u305F\u3061\u3068\u4E00\u7DD2\u306B\u6B69\u3044\u3066\u307F\u305F\u3044\u3068\u611F\u3058\u305F\u306A\u3089\u3001\u3042\u306A\u305F\u306E\u661F\u8AAD\u307F\u3068\u6700\u3082\u5171\u9CF4\u3059\u308B\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u3092\u3054\u63D0\u6848\u3057\u307E\u3059\u3002", false);
         setInputArea(`
-        <button class="btn" onclick="showProductCandidates()">\u{1F48E} \u8A3A\u65AD\u7D50\u679C\u304B\u3089\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u5019\u88DC\u3092\u898B\u308B</button>
+        <button class="btn" onclick="showProductCandidates()">\u{1F48E} \u3042\u306A\u305F\u3078\u306E\u304A\u3059\u3059\u3081\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u3092\u898B\u308B</button>
         <button class="btn btn-secondary" onclick="goLineRegister()">\u{1F52E} LINE\u3067\u30AA\u30E9\u30AF\u30EB\u30AB\u30FC\u30C9\u3092\u53D7\u3051\u53D6\u308B</button>
       `);
         return;
@@ -1004,73 +1005,120 @@ ${result.daily_advice.split(",").map((a) => `\u30FB ${a.trim()}`).join("\n")}`);
   }
 
   // public/liff/src/products.ts
+  function buildScoreBar(score) {
+    const pct = Math.min(100, Math.round(score));
+    return `
+    <div style="margin:6px 0 2px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-size:12px;color:#666;">\u661F\u8AAD\u307F\u4E00\u81F4\u7387</span>
+        <span style="font-size:13px;font-weight:600;color:#222;">${pct}%</span>
+      </div>
+      <div style="background:#e8e8e8;border-radius:6px;height:6px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#b8860b,#daa520);border-radius:6px;transition:width .6s ease;"></div>
+      </div>
+    </div>
+  `;
+  }
+  function buildProductCard(rec, idx, isSelected) {
+    const rank = rec.rank ?? idx + 1;
+    const rankLabel = rank === 1 ? "\u2728 \u7B2C1\u4F4D" : rank === 2 ? "\u{1F319} \u7B2C2\u4F4D" : "\u2B50 \u7B2C3\u4F4D";
+    const priceText = rec.price ? `\xA5${Number(rec.price).toLocaleString()}` : "";
+    const stonesText = (rec.stones || []).join(" \xD7 ") || "\u2014";
+    const reason = rec.recommendation_reason || "\u3042\u306A\u305F\u306E\u661F\u8AAD\u307F\u306B\u5171\u9CF4\u3059\u308B\u69CB\u6210\u3067\u3059";
+    const imageHtml = rec.image_url ? `<img
+         src="${rec.image_url}"
+         alt="${rec.product_name || ""}"
+         style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin:8px 0;"
+         onerror="this.style.display='none'"
+       >` : "";
+    const activeStyle = isSelected ? "border:2px solid #b8860b;box-shadow:0 0 12px rgba(184,134,11,0.35);" : "border:1px solid #ddd;";
+    return `
+    <div
+      class="product-card"
+      style="background:rgba(255,248,235,0.9);border-radius:14px;padding:14px;margin-bottom:10px;cursor:pointer;transition:all .15s ease;${activeStyle}"
+      onclick="selectProductCandidate(${idx}, this)"
+    >
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <span style="font-size:15px;font-weight:700;color:#222;">${rankLabel}</span>
+        ${priceText ? `<span style="font-size:14px;font-weight:600;color:#555;">${priceText}</span>` : ""}
+      </div>
+      ${imageHtml}
+      <p style="font-size:15px;font-weight:600;color:#222;margin:4px 0 6px;line-height:1.5;">${rec.product_name || rec.sku || `\u5019\u88DC${rank}`}</p>
+      <p style="font-size:13px;color:#666;margin:0 0 6px;">\u4F7F\u7528\u77F3\uFF1A${stonesText}</p>
+      ${buildScoreBar(rec.score || 0)}
+      <p style="font-size:13px;color:#444;margin-top:8px;line-height:1.6;">${reason}</p>
+    </div>
+  `;
+  }
   function showProductCandidates() {
-    if (!state.productCandidates || state.productCandidates.length === 0) {
+    const recs = state.productCandidates;
+    if (!recs || recs.length === 0) {
       addMsg("\u95A2\u9023\u3059\u308B\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u5019\u88DC\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002", false);
       return;
     }
-    if (state.selectedProductIndex === null && state.productCandidates.length > 0) {
+    if (state.selectedProductIndex === null && recs.length > 0) {
       state.selectedProductIndex = 0;
     }
     const nameForDisplay = getUserNameForDisplay();
-    let html = `
-    <div class="result-section">
-      <h3>\u{1F48E} ${nameForDisplay}\u306B\u304A\u3059\u3059\u3081\u306E\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u5019\u88DC</h3>
-      <p style="font-size:13px;margin:4px 0 10px;">
-        \u4ECA\u56DE\u306E\u8A3A\u65AD\u7D50\u679C\u304B\u3089\u5C0E\u304B\u308C\u305F\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u5019\u88DC\u3067\u3059\u3002<br>
-        \u6C17\u306B\u306A\u308B\u3082\u306E\u30921\u672C\u9078\u3093\u3067\u3001\u8A73\u3057\u3044\u30DA\u30FC\u30B8\u3092\u958B\u3044\u3066\u304F\u3060\u3055\u3044\u3002
-      </p>
-  `;
-    state.productCandidates.forEach((p, idx) => {
-      const isSelected = idx === state.selectedProductIndex;
-      const label = p.label || p.name || p.slug || `\u5019\u88DC${idx + 1}`;
-      const priceText = p.price ? `\uFF08${p.price}\u5186\uFF09` : "";
-      html += `
-      <button
-        class="btn-toggle ${isSelected ? "active" : ""}"
-        style="display:block;width:100%;text-align:left;margin:4px 0;"
-        onclick="selectProductCandidate(${idx}, this)"
-      >
-        ${idx + 1}. ${label} ${priceText}
-      </button>
-    `;
+    let cardsHtml = "";
+    recs.forEach((rec, idx) => {
+      cardsHtml += buildProductCard(rec, idx, idx === state.selectedProductIndex);
     });
-    html += `</div>
-    <button class="btn" onclick="goToSelectedProduct()">\u{1F6D2} \u9078\u3093\u3060\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u306E\u30DA\u30FC\u30B8\u3092\u958B\u304F</button>
-    <button class="btn btn-secondary" onclick="restartFromBeginning()">\u{1F504} \u3082\u3046\u4E00\u5EA6\u5360\u3046</button>
+    const html = `
+    <div class="result-section" style="padding:0;">
+      <h3 style="margin-bottom:6px;font-size:15px;">\u{1F48E} ${nameForDisplay}\u3078\u306E\u304A\u3059\u3059\u3081\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:12px;line-height:1.6;">
+        \u661F\u8AAD\u307F\u306E\u7D50\u679C\u304B\u3089\u3001\u6700\u3082\u3042\u306A\u305F\u306B\u5171\u9CF4\u3059\u308B3\u3064\u3092\u304A\u9078\u3073\u3057\u307E\u3057\u305F\u3002<br>
+        \u6C17\u306B\u306A\u308B1\u672C\u3092\u9078\u3093\u3067\u3001\u8A73\u3057\u3044\u30DA\u30FC\u30B8\u3092\u3054\u89A7\u304F\u3060\u3055\u3044\u3002
+      </p>
+      ${cardsHtml}
+    </div>
+    <button class="btn" onclick="goToSelectedProduct()">\u{1F6D2} \u9078\u3093\u3060\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u306E\u30DA\u30FC\u30B8\u3078</button>
+    <button class="btn btn-secondary" onclick="restartFromBeginning()">\u{1F504} \u3082\u3046\u4E00\u5EA6\u8A3A\u65AD\u3059\u308B</button>
   `;
     setInputArea(html);
   }
   function selectProductCandidate(index, el) {
     state.selectedProductIndex = index;
-    const container = el.parentElement;
-    container?.querySelectorAll(".btn-toggle").forEach((b) => b.classList.remove("active"));
-    el.classList.add("active");
+    const container = el.closest(".result-section") || el.parentElement;
+    container?.querySelectorAll(".product-card").forEach((card) => {
+      card.style.border = "1px solid #ddd";
+      card.style.boxShadow = "none";
+    });
+    el.style.border = "2px solid #b8860b";
+    el.style.boxShadow = "0 0 12px rgba(184,134,11,0.35)";
   }
   function goToSelectedProduct() {
-    if (!state.productCandidates || state.productCandidates.length === 0 || state.selectedProductIndex === null) {
+    const recs = state.productCandidates;
+    if (!recs || recs.length === 0 || state.selectedProductIndex === null) {
       addMsg("\u5148\u306B\u3001\u898B\u3066\u307F\u305F\u3044\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u30921\u672C\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002", false);
       return;
     }
-    const p = state.productCandidates[state.selectedProductIndex];
-    if (p.id) {
-      const diagnosisId = window.diagnosisId;
-      let url = `https://spicastar.info/atlas/?p=${p.id}`;
-      if (diagnosisId) {
-        url += `&d=${diagnosisId}`;
-      }
+    const rec = recs[state.selectedProductIndex];
+    if (!rec) {
+      addMsg("\u5148\u306B\u3001\u898B\u3066\u307F\u305F\u3044\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u30921\u672C\u9078\u3093\u3067\u304F\u3060\u3055\u3044\u3002", false);
+      return;
+    }
+    const diagnosisId = window.diagnosisId;
+    if (rec.product_url) {
+      const url = diagnosisId ? `${rec.product_url}${rec.product_url.includes("?") ? "&" : "?"}d=${diagnosisId}` : rec.product_url;
+      window.location.href = url;
+    } else if (rec.woo_product_id) {
+      const base = `https://spicastar.info/atlas/?p=${rec.woo_product_id}`;
+      const url = diagnosisId ? `${base}&d=${diagnosisId}` : base;
       window.location.href = url;
     } else {
-      addMsg("\u5546\u54C1\u30DA\u30FC\u30B8\u306E\u60C5\u5831\u304C\u8DB3\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002", false);
+      addMsg("\u5546\u54C1\u30DA\u30FC\u30B8\u306E\u60C5\u5831\u304C\u898B\u3064\u304B\u308A\u307E\u305B\u3093\u3067\u3057\u305F\u3002", false);
     }
   }
   function goLineRegister() {
     const diagnosisId = window.diagnosisId;
-    const selected = state.productCandidates[state.selectedProductIndex ?? 0] || null;
+    const recs = state.productCandidates;
+    const selected = recs?.[state.selectedProductIndex ?? 0] ?? null;
     const lines = [
       "\u8A3A\u65AD\u7D50\u679C\u3092LINE\u3067\u3082\u53D7\u3051\u53D6\u308A\u305F\u3044\u3067\u3059\u3002",
       diagnosisId ? `\u8A3A\u65ADID: ${diagnosisId}` : "",
-      selected && selected.id ? `\u5546\u54C1ID: ${selected.id}` : ""
+      selected?.woo_product_id ? `\u5546\u54C1ID: ${selected.woo_product_id}` : ""
     ].filter(Boolean);
     const text = encodeURIComponent(lines.join("\n"));
     window.location.href = `https://line.me/R/oaMessage/@586spjck/?${text}`;

@@ -72,7 +72,7 @@ export async function executeDiagnose(): Promise<void> {
     }
 
     window.diagnosisId = json.diagnosis_id;
-    state.productCandidates = json.products || [];
+    state.productCandidates = json.recommendations || [];
     state.selectedProductIndex = state.productCandidates.length > 0 ? 0 : null;
 
     clearInterval(thinkingTimer);
@@ -155,9 +155,11 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
   setProgress(3, 4, '導きの石を選定');
   clearInputArea();
   const nameForDisplay = getUserNameForDisplay();
+  const recommendations = (result.recommendations as Array<{ stones?: string[]; product_name?: string }>) || [];
   const stoneName =
     (result.stone_name as string) ||
-    ((result.stones_for_user as Array<{ name: string }>)?.[0]?.name || 'あなたの石');
+    recommendations[0]?.stones?.[0] ||
+    'あなたの石';
   const chatBox = document.getElementById('chatBox');
   if (!chatBox) return;
 
@@ -202,9 +204,9 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
         + `**${stoneName}**の静かなエネルギーが、あなた本来のリズムを思い出させてくれるはずです。`,
         false
       );
-      await addMsg('もしこの石たちと一緒に歩いてみたいと感じたなら、あなたのためのブレスレットとして形にしてみましょう。', false);
+      await addMsg('もしこの石たちと一緒に歩いてみたいと感じたなら、あなたの星読みと最も共鳴するブレスレットをご提案します。', false);
       setInputArea(`
-        <button class="btn" onclick="showProductCandidates()">💎 診断結果からブレスレット候補を見る</button>
+        <button class="btn" onclick="showProductCandidates()">💎 あなたへのおすすめブレスレットを見る</button>
         <button class="btn btn-secondary" onclick="goLineRegister()">🔮 LINEでオラクルカードを受け取る</button>
       `);
       return;

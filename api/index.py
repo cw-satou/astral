@@ -1,12 +1,16 @@
 from flask import Flask, request, jsonify
 import os
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()  # ローカル開発時に .env を読み込む（本番では無視される）
 
 from api.diagnose import diagnose, build_bracelet
 from api.utils_sheet import get_diagnosis, upsert_profile, get_profile
 from api.utils_perplexity import generate_today_fortune, calculate_chart
 from api.utils_geocode import geocode
 from api.woo_webhook import woo_webhook
+from api.utils_woo import fetch_woo_products
 from api.utils_rate_limit import rate_limited
 
 # ロギング設定
@@ -45,37 +49,20 @@ def fortune_detail():
     if not saved:
         return jsonify({"error": "診断結果が見つかりません"}), 404
 
-    base_url = os.environ.get("SHOP_BASE_URL", "").strip()
-    if not base_url:
-        base_url = "https://yourshop.com/product/"
+    # 保存済みの推薦商品スラッグからWooCommerce情報を取得
+    product_slug = saved.get("product_slug", "")
+    woo_details: dict = {}
 
-    # 3商品バリエーション生成（top / single / double）
-    product_slug_top = saved.get("product_slug") or "top-crystal"
-    if not product_slug_top.startswith("top-"):
-        product_slug_top = "top-" + product_slug_top
-
-    product_slug_single = product_slug_top.replace("top-", "single-", 1)
-    product_slug_double = product_slug_top.replace("top-", "double-", 1)
-
-    product_urls = {
-        "top": base_url + product_slug_top,
-        "single": base_url + product_slug_single,
-        "double": base_url + product_slug_double,
-    }
-
-    response = {
-        "diagnosis_id": saved.get("diagnosis_id"),
-        "stone_name": saved.get("stone_name"),
-        "past": saved.get("past"),
-        "present": saved.get("present"),
-        "future": saved.get("future"),
-        "element_detail": saved.get("element_detail"),
-        "oracle_name": saved.get("oracle_name"),
+    return jsonify({
+        "diagnosis_id":    saved.get("diagnosis_id"),
+        "stone_name":      saved.get("stone_name"),
+        "past":            saved.get("past"),
+        "present_future":  saved.get("present_future"),
+        "element_detail":  saved.get("element_detail"),
+        "oracle_name":     saved.get("oracle_name"),
         "oracle_position": saved.get("oracle_position"),
-        "product_urls": product_urls,
-    }
-
-    return jsonify(response)
+        "product_slug":    product_slug,
+    })
 
 
 @app.route("/api/today-fortune", methods=["POST"])

@@ -1,7 +1,7 @@
 {
   "name": "astral",
   "version": "1.0.0",
-  "description": "星の羅針盤「あとらす」- 西洋占星術×クリスタルヒーリング占いサービス",
+  "description": "星の羅針盤「あとらす」- 西洋占星術AI診断 × 天然石ブレスレットのオンラインショップ",
   "private": true,
   "scripts": {
     "build": "esbuild public/liff/src/main.ts --bundle --outfile=public/liff/dist/bundle.js --format=iife --target=es2020 --sourcemap",

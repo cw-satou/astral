@@ -5,3 +5,5 @@ __pycache__/
 .claude/
 .mcp.json
 CLAUDE.md
+.env
+.env.local
