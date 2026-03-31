@@ -16,7 +16,6 @@ export function stepModeSelect(): void {
   setInputArea(`
     <button class="btn" onclick="selectMode('divination')">✨ 導きの石を診断する</button>
     <button class="btn" onclick="selectMode('today_fortune')">🔮 今日の運勢を診断する</button>
-    <button class="btn btn-secondary" onclick="selectMode('stone_select')">💎 好みでブレスレットを選ぶ</button>
   `);
 }
 
