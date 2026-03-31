@@ -195,7 +195,7 @@ def diagnose():
         log_data = {
             "diagnosis_id":   diagnosis_id,
             "created_at":     created_at,
-            "stone_name":     ", ".join(r["stones"][:1] for r in recommendations if r["stones"]),
+            "stone_name":     ", ".join(r["stones"][0] for r in recommendations if r["stones"]),
             "element_lack":   chart_info.get("element_lack", ""),
             "horoscope_full": ai_result.get("destiny_map", ""),
             "past":           ai_result.get("past", ""),
