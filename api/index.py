@@ -207,6 +207,49 @@ def health_gemini():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@app.route('/api/health/drive', methods=['GET'])
+def health_drive():
+    """Google Drive画像保存の診断エンドポイント"""
+    import os
+    result = {}
+
+    folder_id = os.environ.get("DRIVE_IMAGE_FOLDER_ID", "")
+    result["DRIVE_IMAGE_FOLDER_ID"] = folder_id[:8] + "..." if folder_id else "❌ 未設定"
+
+    if not folder_id:
+        return jsonify({"status": "error", "detail": result,
+                        "message": "DRIVE_IMAGE_FOLDER_IDが未設定のためDrive保存はスキップされます"}), 200
+
+    try:
+        from api.utils_image import _get_drive_service
+        service = _get_drive_service()
+        if not service:
+            result["drive_service"] = "❌ 初期化失敗（認証エラーの可能性）"
+            return jsonify({"status": "error", "detail": result}), 500
+
+        # フォルダへのアクセスを確認
+        meta = service.files().get(fileId=folder_id, fields="id,name,mimeType").execute()
+        result["folder_name"] = meta.get("name")
+        result["folder_type"] = meta.get("mimeType")
+        result["drive_service"] = "✅ 接続OK"
+
+        # テスト用の小さいファイルをアップロードして即削除
+        import io, base64
+        from googleapiclient.http import MediaIoBaseUpload
+        dummy = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==")
+        media = MediaIoBaseUpload(io.BytesIO(dummy), mimetype="image/png", resumable=False)
+        created = service.files().create(
+            body={"name": "atlas_health_test.png", "parents": [folder_id]},
+            media_body=media, fields="id"
+        ).execute()
+        service.files().delete(fileId=created["id"]).execute()
+        result["write_test"] = "✅ アップロード・削除テスト成功"
+        return jsonify({"status": "ok", "detail": result})
+    except Exception as e:
+        result["error"] = str(e)
+        return jsonify({"status": "error", "detail": result}), 500
+
+
 @app.route('/api/health/sheets-write', methods=['GET'])
 def health_sheets_write():
     """Sheetsへの書き込みテスト（テスト行を追加して即削除）"""
