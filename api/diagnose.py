@@ -22,6 +22,7 @@ from api.utils_sheet import add_diagnosis, format_stones, update_diagnosis
 from api.utils_geocode import geocode
 from api.matching import recommend_products, build_user_profile
 from api.utils_woo import fetch_woo_products
+from api.utils_image import generate_bracelet_image
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +168,20 @@ def diagnose():
         # マッチングエンジンで上位3商品を取得
         top_products = recommend_products(user_profile, top_n=3)
 
+        # ランク1商品のブレスレット画像をGeminiで生成
+        rank1_bracelet_image: str | None = None
+        if top_products:
+            rank1_stones = top_products[0].get("stones", [])
+            try:
+                rank1_bracelet_image = generate_bracelet_image(
+                    main_stone=rank1_stones[0] if rank1_stones else "水晶",
+                    sub_stones=rank1_stones[1:] if len(rank1_stones) > 1 else None,
+                    seed_key=f"bracelet-{diagnosis_id}",
+                )
+                logger.info("ランク1ブレスレット画像生成: %s", "成功" if rank1_bracelet_image else "スキップ")
+            except Exception as e:
+                logger.warning("ランク1ブレスレット画像生成エラー: %s", e)
+
         # WooCommerceから商品詳細を取得して補完
         woo_ids = [p["woo_product_id"] for p in top_products]
         woo_details = fetch_woo_products(woo_ids)
@@ -175,6 +190,7 @@ def diagnose():
         for product in top_products:
             pid = product["woo_product_id"]
             woo = woo_details.get(pid, {})
+            is_rank1 = product["rank"] == 1
             recommendations.append({
                 "rank":                   product["rank"],
                 "score":                  product["score"],
@@ -183,6 +199,8 @@ def diagnose():
                 "product_name":           woo.get("name", ""),
                 "price":                  woo.get("price", ""),
                 "image_url":              woo.get("image_url", ""),
+                # ランク1はGemini生成ブレスレット画像を優先、なければWooCommerce画像
+                "generated_image_url":    rank1_bracelet_image if is_rank1 else None,
                 "product_url":            woo.get("product_url", ""),
                 "stones":                 product.get("stones", []),
                 "recommendation_reason":  product.get("recommendation_reason", ""),
@@ -217,16 +235,29 @@ def diagnose():
         logger.info("診断完了: %.2f秒", elapsed)
 
         return jsonify({
-            "diagnosis_id":       diagnosis_id,
-            "recommendations":    recommendations,
-            "destiny_map":        ai_result.get("destiny_map", ""),
-            "past":               ai_result.get("past", ""),
-            "present_future":     ai_result.get("present_future", ""),
-            "element_diagnosis":  ai_result.get("element_diagnosis", ""),
-            "oracle_message":     ai_result.get("oracle_message", ""),
-            "element_lack":       chart_info.get("element_lack", ""),
-            "element_lack_ja":    chart_info.get("element_lack_ja", ""),
-            "chart":              {
+            "diagnosis_id":         diagnosis_id,
+            "recommendations":      recommendations,
+            "stone_name":           ai_result.get("stone_name", ""),
+            "destiny_map":          ai_result.get("destiny_map", ""),
+            "past":                 ai_result.get("past", ""),
+            "present_future":       ai_result.get("present_future", ""),
+            "element_diagnosis":    ai_result.get("element_diagnosis", ""),
+            "bracelet_proposal":    ai_result.get("bracelet_proposal", ""),
+            "stone_support_message": ai_result.get("stone_support_message", ""),
+            "affirmation":          ai_result.get("affirmation", ""),
+            "lucky_color":          ai_result.get("lucky_color", ""),
+            "daily_advice":         ai_result.get("daily_advice", ""),
+            "oracle_card":          ai_result.get("oracle_card"),
+            "oracle_message":       ai_result.get("oracle_message", ""),
+            # 画像: utils_perplexityが生成した画像 + rank1ブレスレット画像はrecommendationsに含む
+            "images": {
+                "destiny_scene":    (ai_result.get("images") or {}).get("destiny_scene"),
+                "element_balance":  (ai_result.get("images") or {}).get("element_balance"),
+                "bracelet":         rank1_bracelet_image or (ai_result.get("images") or {}).get("bracelet"),
+            },
+            "element_lack":         chart_info.get("element_lack", ""),
+            "element_lack_ja":      chart_info.get("element_lack_ja", ""),
+            "chart":                {
                 "sun":     chart_info.get("sun_ja", ""),
                 "moon":    chart_info.get("moon_ja", ""),
                 "asc":     chart_info.get("asc_ja", ""),
@@ -234,7 +265,7 @@ def diagnose():
                 "venus":   chart_info.get("venus_ja", ""),
                 "mars":    chart_info.get("mars_ja", ""),
             },
-            "line_user_id":       line_user_id,
+            "line_user_id":         line_user_id,
         })
 
     except Exception:

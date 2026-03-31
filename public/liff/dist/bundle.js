@@ -888,6 +888,30 @@ ${fortuneText}`, false);
       step();
     });
   }
+  async function appendSection(chatBox, title, text, image) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "msg bot";
+    const inner = document.createElement("div");
+    inner.className = "result-section";
+    const h3 = document.createElement("h3");
+    h3.textContent = title;
+    inner.appendChild(h3);
+    if (image) {
+      const img = document.createElement("img");
+      img.src = image;
+      img.className = "section-image";
+      img.alt = title;
+      img.onload = () => img.classList.add("loaded");
+      img.onerror = () => img.style.display = "none";
+      inner.appendChild(img);
+    }
+    const p = document.createElement("p");
+    inner.appendChild(p);
+    wrapper.appendChild(inner);
+    chatBox.appendChild(wrapper);
+    scrollChatToBottom();
+    await typeIntoElement(p, text, 18);
+  }
   async function displayDivinationResult(result) {
     setProgress(3, 4, "\u5C0E\u304D\u306E\u77F3\u3092\u9078\u5B9A");
     clearInputArea();
@@ -898,110 +922,92 @@ ${fortuneText}`, false);
     if (!chatBox)
       return;
     const images = result.images || {};
-    const sections = [
-      { key: "destiny_map", title: "\u2728 \u904B\u547D\u306E\u5730\u56F3", text: result.destiny_map, lead: "\u307E\u305A\u306F\u3001\u3042\u306A\u305F\u5168\u4F53\u306E\u30C6\u30FC\u30DE\u3084\u6D41\u308C\u3092\u5730\u56F3\u306E\u3088\u3046\u306B\u898B\u3066\u3044\u304D\u307E\u3059\u306D\u3002", image: images.destiny_scene },
-      { key: "past", title: "\u{1F319} \u3053\u308C\u307E\u3067\u306E\u6D41\u308C", text: result.past, lead: "\u6B21\u306B\u3001\u3042\u306A\u305F\u304C\u3053\u308C\u307E\u3067\u3069\u3093\u306A\u8CC7\u8CEA\u3084\u6D41\u308C\u3092\u6301\u3063\u3066\u6B69\u3044\u3066\u304D\u305F\u306E\u304B\u3092\u8AAD\u307F\u89E3\u3044\u3066\u3044\u304D\u307E\u3059\u3002" },
-      { key: "present_future", title: "\u2600\uFE0F \u4ECA\u3068\u672A\u6765\u3078\u306E\u6D41\u308C", text: result.present_future, lead: "\u6B21\u306B\u3001\u3042\u306A\u305F\u306E\u4ECA\u3068\u3053\u308C\u304B\u3089\u306E\u6D41\u308C\u3092\u898B\u3066\u3044\u304D\u307E\u3059\u3002" },
-      { key: "element_diagnosis", title: "\u{1F525} \u30A8\u30EC\u30E1\u30F3\u30C8\u306E\u30D0\u30E9\u30F3\u30B9", text: result.element_diagnosis, lead: "\u6B21\u306F\u3001\u706B\u30FB\u5730\u30FB\u98A8\u30FB\u6C34\u306E\u30D0\u30E9\u30F3\u30B9\u304B\u3089\u898B\u3066\u3044\u304D\u307E\u3059\u3002", image: images.element_balance },
-      { key: "bracelet_proposal", title: "\u{1F48E} \u77F3\u306E\u9078\u3073\u65B9\u3068\u610F\u56F3", text: result.bracelet_proposal, lead: "\u3053\u3053\u304B\u3089\u306F\u77F3\u306E\u7D44\u307F\u5408\u308F\u305B\u306E\u610F\u56F3\u3092\u898B\u3066\u3044\u304D\u307E\u3059\u3002", image: images.bracelet },
-      { key: "stone_support_message", title: "\u{1F490} \u77F3\u304B\u3089\u306E\u30B5\u30DD\u30FC\u30C8\u30E1\u30C3\u30BB\u30FC\u30B8", text: result.stone_support_message, lead: "\u77F3\u305F\u3061\u306E\u30E1\u30C3\u30BB\u30FC\u30B8\u3092\u304A\u4F1D\u3048\u3057\u307E\u3059\u3002" }
-    ].filter((sec) => sec.text);
-    let currentIndex = 0;
-    await addMsg(`\u3053\u3053\u304B\u3089\u306F\u3001\u661F\u306E\u914D\u7F6E\u3068\u30A8\u30EC\u30E1\u30F3\u30C8\u306E\u6D41\u308C\u3092\u3082\u3068\u306B\u3001
-${nameForDisplay}\u306E\u4ECA\u306E\u6D41\u308C\u3092\u8AAD\u307F\u89E3\u3044\u3066\u3044\u304D\u307E\u3059\u3002`, false);
-    async function showCurrentSection() {
-      if (currentIndex >= sections.length) {
-        const extras = [];
-        if (result.affirmation) {
-          extras.push(`
-\u2728 \u3042\u306A\u305F\u3078\u306E\u8A00\u8449
-${result.affirmation}`);
-        }
-        if (result.lucky_color) {
-          extras.push(`\u{1F308} \u30E9\u30C3\u30AD\u30FC\u30AB\u30E9\u30FC: **${result.lucky_color}**`);
-        }
-        if (result.daily_advice) {
-          extras.push(`
-\u{1F4DD} \u4ECA\u65E5\u304B\u3089\u3067\u304D\u308B\u3053\u3068
-${result.daily_advice.split(",").map((a) => `\u30FB ${a.trim()}`).join("\n")}`);
-        }
-        if (extras.length > 0) {
-          await addMsg(extras.join("\n\n"), false);
-        }
-        await addMsg("\u3053\u3053\u307E\u3067\u306E\u6D41\u308C\u304B\u3089\u3001\u4ECA\u306E\u3042\u306A\u305F\u3092\u6574\u3048\u308B\u77F3\u304C\u898B\u3048\u3066\u304D\u307E\u3057\u305F\u3002", false);
-        await addMsg(`\u4ECA\u56DE\u306E\u8A3A\u65AD\u3067\u3042\u306A\u305F\u306E\u8EF8\u3068\u306A\u308B\u77F3\u306F **${stoneName}** \u3067\u3059\u3002`, false);
-        await addMsg(
-          `\u3053\u306E\u77F3\u306F\u3001\u3042\u306A\u305F\u306E\u661F\u306E\u914D\u7F6E\u3068\u4ECA\u306E\u5FC3\u306E\u6CE2\u9577\u304B\u3089\u5C0E\u304D\u51FA\u3055\u308C\u305F\u3082\u306E\u3067\u3059\u3002
-
-\u3075\u3068\u8FF7\u3063\u305F\u3068\u304D\u3001\u5FC3\u304C\u63FA\u308C\u305F\u3068\u304D\u3001\u305D\u3063\u3068\u624B\u9996\u306B\u89E6\u308C\u3066\u307F\u3066\u304F\u3060\u3055\u3044\u3002
-**${stoneName}**\u306E\u9759\u304B\u306A\u30A8\u30CD\u30EB\u30AE\u30FC\u304C\u3001\u3042\u306A\u305F\u672C\u6765\u306E\u30EA\u30BA\u30E0\u3092\u601D\u3044\u51FA\u3055\u305B\u3066\u304F\u308C\u308B\u306F\u305A\u3067\u3059\u3002`,
-          false
-        );
-        await addMsg("\u3082\u3057\u3053\u306E\u77F3\u305F\u3061\u3068\u4E00\u7DD2\u306B\u6B69\u3044\u3066\u307F\u305F\u3044\u3068\u611F\u3058\u305F\u306A\u3089\u3001\u3042\u306A\u305F\u306E\u661F\u8AAD\u307F\u3068\u6700\u3082\u5171\u9CF4\u3059\u308B\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u3092\u3054\u63D0\u6848\u3057\u307E\u3059\u3002", false);
-        setInputArea(`
-        <button class="btn" onclick="showProductCandidates()">\u{1F48E} \u3042\u306A\u305F\u3078\u306E\u304A\u3059\u3059\u3081\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u3092\u898B\u308B</button>
-        <button class="btn btn-secondary" onclick="goLineRegister()">\u{1F52E} LINE\u3067\u30AA\u30E9\u30AF\u30EB\u30AB\u30FC\u30C9\u3092\u53D7\u3051\u53D6\u308B</button>
-      `);
-        return;
+    const oracleCard = result.oracle_card;
+    async function showGroup1() {
+      await addMsg(`\u661F\u306E\u914D\u7F6E\u3068\u30A8\u30EC\u30E1\u30F3\u30C8\u306E\u6D41\u308C\u3092\u3082\u3068\u306B\u3001${nameForDisplay}\u306E\u4ECA\u3092\u8AAD\u307F\u89E3\u3044\u3066\u3044\u304D\u307E\u3059\u3002`, false);
+      if (result.destiny_map) {
+        await appendSection(chatBox, "\u2728 \u661F\u306E\u5730\u56F3", result.destiny_map, images.destiny_scene);
       }
-      const sec = sections[currentIndex];
-      if (sec.lead) {
-        await addMsg(sec.lead, false);
-      }
-      const wrapper = document.createElement("div");
-      wrapper.className = "msg bot";
-      const inner = document.createElement("div");
-      inner.className = "result-section";
-      const h3 = document.createElement("h3");
-      h3.textContent = sec.title;
-      inner.appendChild(h3);
-      if (sec.image) {
-        const img = document.createElement("img");
-        img.src = sec.image;
-        img.className = "section-image";
-        img.alt = sec.title;
-        img.onload = () => img.classList.add("loaded");
-        img.onerror = () => img.style.display = "none";
-        inner.appendChild(img);
-      }
-      const p = document.createElement("p");
-      inner.appendChild(p);
-      wrapper.appendChild(inner);
-      chatBox.appendChild(wrapper);
-      scrollChatToBottom();
-      await typeIntoElement(p, sec.text, 20);
-      if (sec.key === "element_diagnosis") {
-        await addMsg("\u6700\u5F8C\u306B\u30AA\u30E9\u30AF\u30EB\u30AB\u30FC\u30C9\u3092\u5F15\u3044\u3066\u3001\u5C0E\u304D\u306E\u58F0\u3092\u805E\u3044\u3066\u307F\u307E\u3057\u3087\u3046\u3002", false);
-        const oracleCard = result.oracle_card;
-        if (oracleCard) {
-          await showOracleCard(oracleCard);
-        }
-        const wrapper2 = document.createElement("div");
-        wrapper2.className = "msg bot";
-        const inner2 = document.createElement("div");
-        inner2.className = "result-section";
-        const h3b = document.createElement("h3");
-        h3b.textContent = "\u30AA\u30E9\u30AF\u30EB\u304B\u3089\u306E\u30E1\u30C3\u30BB\u30FC\u30B8";
-        const p2 = document.createElement("p");
-        inner2.appendChild(h3b);
-        inner2.appendChild(p2);
-        wrapper2.appendChild(inner2);
-        chatBox.appendChild(wrapper2);
-        await typeIntoElement(p2, result.oracle_message, 20);
+      if (result.past) {
+        await appendSection(chatBox, "\u{1F319} \u3053\u308C\u307E\u3067\u306E\u6D41\u308C", result.past);
       }
       setInputArea(`
-      <button class="btn" onclick="showNextSection()">\u6B21\u306E\u30E1\u30C3\u30BB\u30FC\u30B8\u3092\u8AAD\u3080</button>
+      <button class="btn" onclick="showNextSection()">\u7D9A\u304D\u3092\u8AAD\u3080\u3000\u2192\u3000\u4ECA\u306E\u3042\u306A\u305F\u3078\u306E\u30E1\u30C3\u30BB\u30FC\u30B8</button>
     `);
     }
+    async function showGroup2() {
+      await addMsg("\u4ECA\u306E\u3042\u306A\u305F\u306E\u72B6\u614B\u3068\u3001\u3053\u308C\u304B\u3089\u306E\u6D41\u308C\u3092\u898B\u3066\u3044\u304D\u307E\u3059\u3002", false);
+      if (result.present_future) {
+        await appendSection(chatBox, "\u2600\uFE0F \u4ECA\u3068\u3001\u3053\u308C\u304B\u3089\u306E\u6D41\u308C", result.present_future);
+      }
+      if (result.element_diagnosis) {
+        await appendSection(chatBox, "\u{1F525} \u30A8\u30CD\u30EB\u30AE\u30FC\u306E\u30D0\u30E9\u30F3\u30B9", result.element_diagnosis, images.element_balance);
+      }
+      if (oracleCard) {
+        await addMsg("\u6700\u5F8C\u306B\u30AA\u30E9\u30AF\u30EB\u30AB\u30FC\u30C9\u3092\u5F15\u3044\u3066\u3001\u5C0E\u304D\u306E\u58F0\u3092\u805E\u3044\u3066\u307F\u307E\u3057\u3087\u3046\u3002", false);
+        await showOracleCard(oracleCard);
+        if (result.oracle_message) {
+          const w = document.createElement("div");
+          w.className = "msg bot";
+          const inn = document.createElement("div");
+          inn.className = "result-section";
+          const h = document.createElement("h3");
+          h.textContent = "\u30AA\u30E9\u30AF\u30EB\u304B\u3089\u306E\u30E1\u30C3\u30BB\u30FC\u30B8";
+          const p = document.createElement("p");
+          inn.appendChild(h);
+          inn.appendChild(p);
+          w.appendChild(inn);
+          chatBox.appendChild(w);
+          await typeIntoElement(p, result.oracle_message, 18);
+        }
+      }
+      setInputArea(`
+      <button class="btn" onclick="showNextSection()">\u7D9A\u304D\u3092\u8AAD\u3080\u3000\u2192\u3000\u77F3\u306E\u30E1\u30C3\u30BB\u30FC\u30B8</button>
+    `);
+    }
+    async function showGroup3() {
+      await addMsg("\u4ECA\u306E\u3042\u306A\u305F\u3092\u6574\u3048\u308B\u77F3\u3068\u3001\u305D\u306E\u30B5\u30DD\u30FC\u30C8\u3092\u304A\u4F1D\u3048\u3057\u307E\u3059\u3002", false);
+      if (result.bracelet_proposal) {
+        await appendSection(chatBox, "\u{1F48E} \u3042\u306A\u305F\u306B\u9078\u3070\u308C\u305F\u77F3", result.bracelet_proposal, images.bracelet);
+      }
+      if (result.stone_support_message) {
+        await appendSection(chatBox, "\u{1F490} \u77F3\u304B\u3089\u306E\u30E1\u30C3\u30BB\u30FC\u30B8", result.stone_support_message);
+      }
+      const extras = [];
+      if (result.affirmation)
+        extras.push(`\u2728 **${result.affirmation}**`);
+      if (result.lucky_color)
+        extras.push(`\u{1F308} \u4ECA\u65E5\u306E\u30E9\u30C3\u30AD\u30FC\u30AB\u30E9\u30FC\uFF1A**${result.lucky_color}**`);
+      if (result.daily_advice) {
+        const adviceList = result.daily_advice.split(",").map((a) => `\u30FB ${a.trim()}`).join("\n");
+        extras.push(`\u{1F4DD} \u4ECA\u65E5\u304B\u3089\u3067\u304D\u308B\u3053\u3068
+${adviceList}`);
+      }
+      if (extras.length > 0) {
+        await addMsg(extras.join("\n\n"), false);
+      }
+      await addMsg(
+        `\u4ECA\u56DE\u306E\u8A3A\u65AD\u3067\u3001${nameForDisplay}\u306E\u8EF8\u3068\u306A\u308B\u77F3\u306F **${stoneName}** \u3067\u3059\u3002
+
+\u3075\u3068\u8FF7\u3063\u305F\u3068\u304D\u3001\u5FC3\u304C\u63FA\u308C\u305F\u3068\u304D\u3001\u305D\u3063\u3068\u624B\u9996\u306B\u89E6\u308C\u3066\u307F\u3066\u304F\u3060\u3055\u3044\u3002
+**${stoneName}** \u306E\u9759\u304B\u306A\u30A8\u30CD\u30EB\u30AE\u30FC\u304C\u3001\u3042\u306A\u305F\u672C\u6765\u306E\u30EA\u30BA\u30E0\u3092\u601D\u3044\u51FA\u3055\u305B\u3066\u304F\u308C\u307E\u3059\u3002`,
+        false
+      );
+      setInputArea(`
+      <button class="btn" onclick="showProductCandidates()">\u{1F48E} \u3042\u306A\u305F\u3078\u306E\u304A\u3059\u3059\u3081\u30D6\u30EC\u30B9\u30EC\u30C3\u30C8\u3092\u898B\u308B</button>
+      <button class="btn btn-secondary" onclick="goLineRegister()">\u{1F52E} LINE\u3067\u30AA\u30E9\u30AF\u30EB\u30AB\u30FC\u30C9\u3092\u53D7\u3051\u53D6\u308B</button>
+    `);
+    }
+    let groupIndex = 0;
+    const groups = [showGroup1, showGroup2, showGroup3];
     async function showNextSection() {
-      const isLast = currentIndex === sections.length - 1;
-      const label = isLast ? "\u6700\u5F8C\u306E\u30E1\u30C3\u30BB\u30FC\u30B8\u307E\u3067\u8AAD\u3080" : "\u6B21\u306E\u30E1\u30C3\u30BB\u30FC\u30B8\u3092\u8AAD\u3080";
-      await addMsg(label, true);
-      currentIndex++;
-      await showCurrentSection();
+      const labels = ["\u7D9A\u304D\u3092\u8AAD\u3080\u3000\u2192\u3000\u4ECA\u306E\u3042\u306A\u305F\u3078\u306E\u30E1\u30C3\u30BB\u30FC\u30B8", "\u7D9A\u304D\u3092\u8AAD\u3080\u3000\u2192\u3000\u77F3\u306E\u30E1\u30C3\u30BB\u30FC\u30B8"];
+      await addMsg(labels[groupIndex] || "\u7D9A\u304D\u3092\u8AAD\u3080", true);
+      groupIndex++;
+      await groups[groupIndex]?.();
     }
     window.showNextSection = showNextSection;
-    await showCurrentSection();
+    await groups[0]();
   }
 
   // public/liff/src/products.ts
@@ -1025,8 +1031,9 @@ ${result.daily_advice.split(",").map((a) => `\u30FB ${a.trim()}`).join("\n")}`);
     const priceText = rec.price ? `\xA5${Number(rec.price).toLocaleString()}` : "";
     const stonesText = (rec.stones || []).join(" \xD7 ") || "\u2014";
     const reason = rec.recommendation_reason || "\u3042\u306A\u305F\u306E\u661F\u8AAD\u307F\u306B\u5171\u9CF4\u3059\u308B\u69CB\u6210\u3067\u3059";
-    const imageHtml = rec.image_url ? `<img
-         src="${rec.image_url}"
+    const displayImageUrl = rec.generated_image_url || rec.image_url || "";
+    const imageHtml = displayImageUrl ? `<img
+         src="${displayImageUrl}"
          alt="${rec.product_name || ""}"
          style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin:8px 0;"
          onerror="this.style.display='none'"

@@ -17,6 +17,7 @@ interface Recommendation {
   product_name: string;
   price: string | number;
   image_url: string;
+  generated_image_url?: string | null;  // Gemini生成ブレスレット画像（ランク1のみ）
   product_url: string;
   stones: string[];
   recommendation_reason: string;
@@ -48,9 +49,11 @@ function buildProductCard(rec: Recommendation, idx: number, isSelected: boolean)
   const stonesText = (rec.stones || []).join(' × ') || '—';
   const reason = rec.recommendation_reason || 'あなたの星読みに共鳴する構成です';
 
-  const imageHtml = rec.image_url
+  // Gemini生成画像を優先、なければWooCommerce画像
+  const displayImageUrl = rec.generated_image_url || rec.image_url || '';
+  const imageHtml = displayImageUrl
     ? `<img
-         src="${rec.image_url}"
+         src="${displayImageUrl}"
          alt="${rec.product_name || ''}"
          style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin:8px 0;"
          onerror="this.style.display='none'"
