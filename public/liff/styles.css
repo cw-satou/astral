@@ -26,9 +26,38 @@ body {
     padding: 0;
     overflow: hidden;
     font-size: 16px;
-    /* モバイルブラウザによる文字サイズ自動調整を無効化 */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+}
+
+/* PC：コンテナが480px幅に収まるため文字が相対的に大きく見える → 小さめに */
+@media (min-width: 601px) {
+    html, body { font-size: 13px; }
+    .msg                                               { font-size: 13px; }
+    .result-section p                                  { font-size: 13px; }
+    .result-section h3                                 { font-size: 13px; }
+    .btn                                               { font-size: 13px; }
+    .btn-toggle                                        { font-size: 12px; }
+    .input-field label                                 { font-size: 12px; }
+    .input-field input,
+    .input-field textarea,
+    .input-field select                                { font-size: 14px; }
+    .progress-bar                                      { font-size: 11px; }
+}
+
+/* スマートフォン：標準サイズを少し大きめに */
+@media (max-width: 600px) {
+    html, body { font-size: 16px; }
+    .msg                                               { font-size: 16px; }
+    .result-section p                                  { font-size: 16px; }
+    .result-section h3                                 { font-size: 15px; }
+    .btn                                               { font-size: 15px; }
+    .btn-toggle                                        { font-size: 14px; }
+    .input-field label                                 { font-size: 14px; }
+    .input-field input,
+    .input-field textarea,
+    .input-field select                                { font-size: 17px; }
+    .progress-bar                                      { font-size: 12px; }
 }
 
 body {
