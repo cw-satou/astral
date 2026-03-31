@@ -20,6 +20,7 @@ class ProductEntry(TypedDict):
     gender_mode: str       # "male" / "female" / "unisex"
     enabled: bool
     priority_weight: float
+    product_url: str       # 商品ページURL（外部URLまたはWooCommerce以外の場合に設定）
 
 
 # ===== 商品構成マスタ =====

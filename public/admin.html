@@ -22,7 +22,7 @@
     }
     header h1 { font-size: 18px; color: #daa520; letter-spacing: 1px; }
     header span { font-size: 12px; color: #888; }
-    .container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+    .container { max-width: 1080px; margin: 0 auto; padding: 24px 16px; }
 
     /* ログイン */
     #login-screen {
@@ -39,7 +39,7 @@
     #login-error { color: #e57373; font-size: 13px; }
 
     /* タブ */
-    .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #333; }
+    .tabs { display: flex; gap: 4px; margin-bottom: 0; border-bottom: none; }
     .tab-btn {
       padding: 10px 20px; background: none; border: none;
       color: #888; cursor: pointer; font-size: 14px; border-bottom: 2px solid transparent;
@@ -56,16 +56,17 @@
       border: 1px solid #b8860b33;
       border-radius: 12px; padding: 20px; margin-bottom: 16px;
     }
-    .card h3 { font-size: 15px; color: #daa520; margin-bottom: 16px; }
+    .card h3 { font-size: 15px; color: #daa520; margin-bottom: 12px; }
 
     /* テーブル */
+    .table-wrap { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
     th {
       text-align: left; padding: 8px 10px;
       background: rgba(184,134,11,0.12); color: #daa520;
-      border-bottom: 1px solid #b8860b33;
+      border-bottom: 1px solid #b8860b33; white-space: nowrap;
     }
-    td { padding: 8px 10px; border-bottom: 1px solid #ffffff0d; vertical-align: top; }
+    td { padding: 8px 10px; border-bottom: 1px solid #ffffff0d; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(255,255,255,0.03); }
 
@@ -76,26 +77,18 @@
     }
     .weight-row:last-of-type { border-bottom: none; }
     .weight-label { width: 90px; font-size: 14px; }
-    .weight-row input[type=range] {
-      flex: 1; accent-color: #b8860b; cursor: pointer;
-    }
-    .weight-pct {
-      width: 50px; text-align: right; font-weight: 600; color: #daa520; font-size: 14px;
-    }
+    .weight-row input[type=range] { flex: 1; accent-color: #b8860b; cursor: pointer; }
+    .weight-pct { width: 50px; text-align: right; font-weight: 600; color: #daa520; font-size: 14px; }
     .weight-row input[type=number] {
       width: 60px; padding: 4px 8px; background: #16213e;
       border: 1px solid #b8860b44; border-radius: 6px;
       color: #e8e0d0; font-size: 14px; text-align: center;
     }
-    .weight-total {
-      text-align: right; font-size: 13px; margin-top: 8px; color: #888;
-    }
+    .weight-total { text-align: right; font-size: 13px; margin-top: 8px; color: #888; }
     .weight-total.warn { color: #e57373; }
 
     /* toggle */
-    .toggle {
-      position: relative; display: inline-block; width: 44px; height: 24px;
-    }
+    .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
     .toggle input { opacity: 0; width: 0; height: 0; }
     .toggle-slider {
       position: absolute; cursor: pointer; inset: 0;
@@ -114,6 +107,11 @@
       width: 64px; padding: 4px 8px; background: #16213e;
       border: 1px solid #b8860b44; border-radius: 6px;
       color: #e8e0d0; font-size: 13px; text-align: center;
+    }
+    input.url-input {
+      width: 180px; padding: 4px 8px; background: #16213e;
+      border: 1px solid #b8860b44; border-radius: 6px;
+      color: #e8e0d0; font-size: 12px;
     }
 
     /* ツールボタン */
@@ -137,6 +135,25 @@
     }
     .btn-save:hover { opacity: 0.85; }
     .btn-save:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-add {
+      padding: 8px 18px; background: rgba(184,134,11,0.15);
+      border: 1px solid #b8860b; border-radius: 8px; color: #daa520;
+      font-size: 13px; cursor: pointer; margin-bottom: 14px;
+      transition: all .15s;
+    }
+    .btn-add:hover { background: rgba(184,134,11,0.3); }
+    .btn-edit {
+      padding: 4px 10px; background: rgba(255,255,255,0.07);
+      border: 1px solid #555; border-radius: 5px; color: #ccc;
+      font-size: 12px; cursor: pointer; white-space: nowrap;
+    }
+    .btn-edit:hover { background: rgba(255,255,255,0.15); color: #e8e0d0; }
+    .btn-delete {
+      padding: 4px 10px; background: rgba(229,115,115,0.1);
+      border: 1px solid #e5737355; border-radius: 5px; color: #e57373;
+      font-size: 12px; cursor: pointer; white-space: nowrap;
+    }
+    .btn-delete:hover { background: rgba(229,115,115,0.25); }
 
     /* タグ */
     .tag {
@@ -151,8 +168,8 @@
       position: fixed; bottom: 24px; right: 24px;
       background: #1b5e20; color: #c8e6c9;
       padding: 12px 20px; border-radius: 8px; font-size: 14px;
-      box-shadow: 0 4px 12px #00000066;
-      transition: opacity .3s; opacity: 0; pointer-events: none;
+      box-shadow: 0 4px 12px #00000066; white-space: pre-line;
+      transition: opacity .3s; opacity: 0; pointer-events: none; z-index: 2000;
     }
     #toast.show { opacity: 1; }
     #toast.error { background: #b71c1c; color: #ffcdd2; }
@@ -161,14 +178,96 @@
     .loading { text-align: center; padding: 40px; color: #888; }
 
     /* バー（石プロファイル） */
-    .mini-bar {
-      display: flex; align-items: center; gap: 6px; margin-bottom: 3px;
-    }
+    .mini-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
     .mini-bar span { width: 20px; font-size: 10px; color: #888; text-align: right; }
-    .mini-bar-track {
-      flex: 1; height: 5px; background: #333; border-radius: 3px; overflow: hidden;
-    }
+    .mini-bar-track { flex: 1; height: 5px; background: #333; border-radius: 3px; overflow: hidden; }
     .mini-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; }
+
+    /* モーダル */
+    #modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      display: none; align-items: flex-start; justify-content: center;
+      z-index: 1000; padding: 40px 16px; overflow-y: auto;
+    }
+    #modal-overlay.show { display: flex; }
+    #modal-box {
+      background: #16213e; border: 1px solid #b8860b55; border-radius: 14px;
+      padding: 24px; width: 100%; max-width: 660px;
+    }
+    #modal-title { font-size: 16px; color: #daa520; font-weight: 700; margin-bottom: 20px; }
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+    .form-row input[type=text],
+    .form-row input[type=number],
+    .form-row input[type=url],
+    .form-row textarea,
+    .form-row select {
+      width: 100%; padding: 8px 10px; background: #0d1b4a;
+      border: 1px solid #b8860b44; border-radius: 6px;
+      color: #e8e0d0; font-size: 14px; outline: none;
+    }
+    .form-row input:focus, .form-row textarea:focus, .form-row select:focus {
+      border-color: #b8860b;
+    }
+    .form-row textarea { height: 64px; resize: vertical; }
+    .form-row input[readonly] { color: #888; cursor: not-allowed; }
+    .form-section {
+      font-size: 12px; color: #daa520; margin: 18px 0 10px;
+      border-bottom: 1px solid #b8860b33; padding-bottom: 5px;
+    }
+    .form-grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+    .form-grid8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+    .form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid4 > div label,
+    .form-grid8 > div label { display: block; font-size: 11px; color: #888; margin-bottom: 3px; }
+    .form-grid4 > div input,
+    .form-grid8 > div input {
+      width: 100%; padding: 5px 7px; background: #0d1b4a;
+      border: 1px solid #b8860b44; border-radius: 5px;
+      color: #e8e0d0; font-size: 13px; text-align: center; outline: none;
+    }
+    .form-grid4 > div input:focus,
+    .form-grid8 > div input:focus { border-color: #b8860b; }
+    .modal-actions {
+      display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;
+      border-top: 1px solid #b8860b22; padding-top: 16px;
+    }
+    .modal-actions button {
+      padding: 9px 22px; border-radius: 7px; font-size: 14px; cursor: pointer;
+      transition: opacity .15s;
+    }
+    #modal-cancel {
+      background: rgba(255,255,255,0.07); border: 1px solid #555; color: #ccc;
+    }
+    #modal-submit {
+      background: linear-gradient(135deg, #b8860b, #daa520);
+      border: none; color: #1a1a2e; font-weight: 700;
+    }
+    #modal-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* パーツ行 */
+    .part-row {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 8px;
+      background: rgba(255,255,255,0.04); border-radius: 6px; padding: 8px;
+    }
+    .part-row select, .part-row input {
+      flex: 1; padding: 6px 8px; background: #0d1b4a;
+      border: 1px solid #b8860b44; border-radius: 5px;
+      color: #e8e0d0; font-size: 13px; outline: none;
+    }
+    .part-row select:focus, .part-row input:focus { border-color: #b8860b; }
+    .part-row input[type=number] { max-width: 70px; text-align: center; }
+    .btn-part-del {
+      padding: 4px 8px; background: rgba(229,115,115,0.15);
+      border: 1px solid #e5737355; border-radius: 4px; color: #e57373;
+      font-size: 12px; cursor: pointer; flex-shrink: 0;
+    }
+    .btn-part-add {
+      padding: 6px 14px; background: rgba(184,134,11,0.12);
+      border: 1px solid #b8860b44; border-radius: 6px; color: #daa520;
+      font-size: 12px; cursor: pointer; margin-top: 4px;
+    }
+    .btn-part-add:hover { background: rgba(184,134,11,0.25); }
   </style>
 </head>
 <body>
@@ -189,15 +288,15 @@
   <div id="main-screen" style="display:none;">
     <div class="container">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div class="tabs" style="margin-bottom:0;border-bottom:none;">
+        <div class="tabs">
           <button class="tab-btn active" onclick="switchTab('score')">スコア重み</button>
           <button class="tab-btn" onclick="switchTab('products')">商品マスター</button>
           <button class="tab-btn" onclick="switchTab('stones')">石マスター</button>
           <button class="tab-btn" onclick="switchTab('combos')">組み合わせ</button>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-tool" onclick="clearCache()" title="シートの最新データを再読み込みします">🔄 キャッシュクリア</button>
-          <button class="btn-tool btn-migrate" onclick="migrateToSheets()" title="Pythonファイルのマスターデータをシートに初期移行します">📤 シートへ移行</button>
+          <button class="btn-tool" onclick="clearCache()">🔄 キャッシュクリア</button>
+          <button class="btn-tool btn-migrate" onclick="migrateToSheets()">📤 シートへ移行</button>
         </div>
       </div>
       <div style="border-bottom:1px solid #333;margin-bottom:20px;"></div>
@@ -217,26 +316,44 @@
       <div id="tab-products" class="tab-panel">
         <div class="card">
           <h3>商品マスター</h3>
-          <p style="font-size:12px;color:#888;margin-bottom:16px;">有効/無効・優先度を変更できます。優先度はスコアへの倍率（通常1.0）。</p>
-          <div id="product-table"><div class="loading">読み込み中...</div></div>
-          <button class="btn-save" onclick="saveProducts()">保存する</button>
+          <p style="font-size:12px;color:#888;margin-bottom:12px;">
+            WooCommerce商品は編集のみ可。外部商品（X-ID）は追加・削除も可能です。<br>
+            有効/無効・優先度の一括保存はテーブル下の「保存する」から。
+          </p>
+          <button class="btn-add" onclick="openProductModal(null)">＋ 外部商品を追加</button>
+          <div id="product-table" class="table-wrap"><div class="loading">読み込み中...</div></div>
+          <button class="btn-save" onclick="saveProducts()">有効/優先度を保存</button>
         </div>
       </div>
 
       <!-- 石マスター -->
       <div id="tab-stones" class="tab-panel">
         <div class="card">
-          <h3>石マスター（閲覧のみ）</h3>
-          <div id="stone-table"><div class="loading">読み込み中...</div></div>
+          <h3>石マスター</h3>
+          <button class="btn-add" onclick="openStoneModal(null)">＋ 石を追加</button>
+          <div id="stone-table" class="table-wrap"><div class="loading">読み込み中...</div></div>
         </div>
       </div>
 
       <!-- 組み合わせ -->
       <div id="tab-combos" class="tab-panel">
         <div class="card">
-          <h3>石の組み合わせ効果（閲覧のみ）</h3>
-          <div id="combo-table"><div class="loading">読み込み中...</div></div>
+          <h3>石の組み合わせ効果</h3>
+          <button class="btn-add" onclick="openComboModal(null, null)">＋ 組み合わせを追加</button>
+          <div id="combo-table" class="table-wrap"><div class="loading">読み込み中...</div></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル -->
+  <div id="modal-overlay" onclick="onOverlayClick(event)">
+    <div id="modal-box">
+      <div id="modal-title"></div>
+      <div id="modal-body"></div>
+      <div class="modal-actions">
+        <button id="modal-cancel" onclick="closeModal()">キャンセル</button>
+        <button id="modal-submit" onclick="submitModal()">保存する</button>
       </div>
     </div>
   </div>
@@ -246,6 +363,7 @@
   <script>
     let password = '';
     let masterData = null;
+    let _modalSubmitFn = null;
 
     // --- ログイン ---
     document.getElementById('pw-input').addEventListener('keydown', e => {
@@ -282,15 +400,15 @@
 
     // --- タブ切り替え ---
     function switchTab(name) {
+      const names = ['score', 'products', 'stones', 'combos'];
       document.querySelectorAll('.tab-btn').forEach((b, i) => {
-        const names = ['score', 'products', 'stones', 'combos'];
         b.classList.toggle('active', names[i] === name);
       });
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       document.getElementById('tab-' + name).classList.add('active');
     }
 
-    // --- 描画 ---
+    // --- 全描画 ---
     function renderAll() {
       renderScoreWeights();
       renderProducts();
@@ -298,7 +416,13 @@
       renderCombos();
     }
 
-    // スコア重み
+    async function reloadMaster() {
+      const r = await apiFetch('/api/admin/master');
+      masterData = await r.json();
+      renderAll();
+    }
+
+    // ===== スコア重み =====
     function renderScoreWeights() {
       const w = masterData.score_weights;
       const labels = { element: '星座相性', aura: 'オーラ', theme: 'テーマ', worry: '悩み' };
@@ -344,20 +468,32 @@
       await saveConfig(updates);
     }
 
-    // 商品マスター
+    // ===== 商品マスター =====
     function renderProducts() {
-      const products = masterData.products;
-      let html = '<table><thead><tr><th>商品ID</th><th>SKU</th><th>石構成</th><th>性別</th><th>有効</th><th>優先度</th></tr></thead><tbody>';
+      const products = masterData.products || [];
+      let html = `<table><thead><tr>
+        <th>商品ID</th><th>SKU</th><th>石構成</th><th>性別</th>
+        <th>有効</th><th>優先度</th><th>商品URL</th><th>操作</th>
+      </tr></thead><tbody>`;
       for (const p of products) {
         const stonesHtml = (p.stone_names || []).join(' × ');
         const checked = p.enabled ? 'checked' : '';
+        const isExternal = String(p.product_id || '').startsWith('X');
+        const deleteBtn = isExternal
+          ? `<button class="btn-delete" onclick="deleteProduct('${p.product_id}')">削除</button>`
+          : '';
         html += `<tr>
-          <td>${p.woo_product_id}</td>
-          <td style="font-size:11px;color:#aaa;">${p.sku}</td>
+          <td style="font-size:11px;color:${isExternal ? '#daa520' : '#aaa'};">${p.product_id}</td>
+          <td style="font-size:11px;color:#aaa;">${p.sku || '—'}</td>
           <td>${stonesHtml}</td>
           <td>${p.gender_mode}</td>
           <td><label class="toggle"><input type="checkbox" id="p-en-${p.product_id}" ${checked}><span class="toggle-slider"></span></label></td>
           <td><input class="priority-input" type="number" step="0.1" min="0.1" max="3.0" id="p-pr-${p.product_id}" value="${p.priority_weight}"></td>
+          <td><input class="url-input" type="text" id="p-url-${p.product_id}" value="${p.product_url || ''}" placeholder="（なし）"></td>
+          <td style="white-space:nowrap;display:flex;gap:4px;">
+            <button class="btn-edit" onclick="openProductModal('${p.product_id}')">編集</button>
+            ${deleteBtn}
+          </td>
         </tr>`;
       }
       html += '</tbody></table>';
@@ -365,23 +501,68 @@
     }
 
     async function saveProducts() {
-      const updates = {};
-      for (const p of masterData.products) {
-        const pid = p.product_id;
-        const en = document.getElementById(`p-en-${pid}`)?.checked;
-        const pr = parseFloat(document.getElementById(`p-pr-${pid}`)?.value) || 1.0;
-        updates[`product_${pid}_enabled`] = en ? 'true' : 'false';
-        updates[`product_${pid}_priority`] = pr.toFixed(2);
+      const btn = event.target;
+      btn.disabled = true; btn.textContent = '保存中...';
+      try {
+        // 1. enabled/priority は config 経由で保存
+        const configUpdates = {};
+        for (const p of masterData.products) {
+          const pid = p.product_id;
+          const en = document.getElementById(`p-en-${pid}`)?.checked;
+          const pr = parseFloat(document.getElementById(`p-pr-${pid}`)?.value) || 1.0;
+          configUpdates[`product_${pid}_enabled`] = en ? 'true' : 'false';
+          configUpdates[`product_${pid}_priority`] = pr.toFixed(2);
+        }
+        const res = await apiFetch('/api/admin/config', 'POST', { updates: configUpdates });
+
+        // 2. product_url は商品マスターシートへ直接保存
+        for (const p of masterData.products) {
+          const pid = p.product_id;
+          const newUrl = document.getElementById(`p-url-${pid}`)?.value || '';
+          if (newUrl !== (p.product_url || '')) {
+            const productData = { ...p, product_url: newUrl };
+            await apiFetch(`/api/admin/product/${pid}`, 'PUT', { product_data: productData });
+          }
+        }
+
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ 保存しました');
+          await reloadMaster();
+        } else {
+          showToast('❌ 保存失敗: ' + JSON.stringify(data.errors || data.error), true);
+        }
+      } catch (e) {
+        showToast('❌ エラー: ' + e.message, true);
+      } finally {
+        btn.disabled = false; btn.textContent = '有効/優先度を保存';
       }
-      await saveConfig(updates);
     }
 
-    // 石マスター
+    async function deleteProduct(productId) {
+      if (!confirm(`外部商品「${productId}」を削除しますか？`)) return;
+      try {
+        const res = await apiFetch(`/api/admin/product/${productId}`, 'DELETE');
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ 削除しました');
+          await reloadMaster();
+        } else {
+          showToast('❌ ' + data.error, true);
+        }
+      } catch (e) {
+        showToast('❌ エラー: ' + e.message, true);
+      }
+    }
+
+    // ===== 石マスター =====
     function renderStones() {
-      const stones = masterData.stones;
-      let html = '<table><thead><tr><th>石名</th><th>説明</th><th>エレメント</th><th>テーマタグ</th><th>悩みタグ</th></tr></thead><tbody>';
+      const stones = masterData.stones || [];
       const elemColors = { fire: '#e57373', earth: '#81c784', air: '#64b5f6', water: '#4fc3f7' };
       const elemLabels = { fire: '火', earth: '地', air: '風', water: '水' };
+      let html = `<table><thead><tr>
+        <th>石名</th><th>説明</th><th>エレメント</th><th>テーマタグ</th><th>悩みタグ</th><th>操作</th>
+      </tr></thead><tbody>`;
       for (const s of stones) {
         const ep = s.element_profile || {};
         let bars = '';
@@ -390,60 +571,492 @@
         }
         const themeTags = (s.theme_tags || []).map(t => `<span class="tag">${t}</span>`).join('');
         const worryTags = (s.worry_tags || []).map(t => `<span class="tag worry">${t}</span>`).join('');
+        const sid = s.stone_id;
         html += `<tr>
           <td style="font-weight:600;white-space:nowrap;">${s.stone_name}</td>
-          <td style="font-size:11px;color:#aaa;">${s.description}</td>
+          <td style="font-size:11px;color:#aaa;max-width:160px;">${s.description}</td>
           <td style="min-width:110px;">${bars}</td>
           <td>${themeTags}</td>
           <td>${worryTags}</td>
+          <td style="white-space:nowrap;display:flex;gap:4px;">
+            <button class="btn-edit" onclick="openStoneModal('${sid}')">編集</button>
+            <button class="btn-delete" onclick="deleteStone('${sid}')">削除</button>
+          </td>
         </tr>`;
       }
       html += '</tbody></table>';
       document.getElementById('stone-table').innerHTML = html;
     }
 
-    // 組み合わせ
+    async function deleteStone(stoneId) {
+      const stone = masterData.stones.find(s => s.stone_id === stoneId);
+      if (!confirm(`石「${stone?.stone_name || stoneId}」を削除しますか？`)) return;
+      try {
+        const res = await apiFetch(`/api/admin/stone/${stoneId}`, 'DELETE');
+        const data = await res.json();
+        if (res.ok) {
+          showToast('✅ 削除しました');
+          await reloadMaster();
+        } else {
+          showToast('❌ ' + data.error, true);
+        }
+      } catch (e) {
+        showToast('❌ エラー: ' + e.message, true);
+      }
+    }
+
+    // ===== 組み合わせマスター =====
     function renderCombos() {
-      const combos = masterData.combinations;
-      let html = '<table><thead><tr><th>石の組み合わせ</th><th>意味</th><th>テーマタグ</th><th>悩みタグ</th></tr></thead><tbody>';
+      const combos = masterData.combinations || [];
+      let html = `<table><thead><tr>
+        <th>石の組み合わせ</th><th>意味</th><th>テーマタグ</th><th>悩みタグ</th><th>操作</th>
+      </tr></thead><tbody>`;
       for (const c of combos) {
         const names = (c.stone_names || []).join(' × ');
         const themeTags = (c.theme_tags || []).map(t => `<span class="tag">${t}</span>`).join('');
         const worryTags = (c.worry_tags || []).map(t => `<span class="tag worry">${t}</span>`).join('');
+        const sA = (c.stones || [])[0] || '';
+        const sB = (c.stones || [])[1] || '';
         html += `<tr>
           <td style="font-weight:600;white-space:nowrap;">${names}</td>
           <td style="font-size:12px;color:#aaa;">${c.meaning}</td>
           <td>${themeTags}</td>
           <td>${worryTags}</td>
+          <td style="white-space:nowrap;display:flex;gap:4px;">
+            <button class="btn-edit" onclick="openComboModal('${sA}','${sB}')">編集</button>
+            <button class="btn-delete" onclick="deleteCombo('${sA}','${sB}')">削除</button>
+          </td>
         </tr>`;
       }
       html += '</tbody></table>';
       document.getElementById('combo-table').innerHTML = html;
     }
 
-    // --- 保存共通 ---
-    async function saveConfig(updates) {
-      const btn = event.target;
-      btn.disabled = true;
-      btn.textContent = '保存中...';
+    async function deleteCombo(stoneA, stoneB) {
+      const combo = masterData.combinations.find(c => {
+        const s = c.stones || [];
+        return (s[0] === stoneA && s[1] === stoneB) || (s[0] === stoneB && s[1] === stoneA);
+      });
+      const names = (combo?.stone_names || [stoneA, stoneB]).join(' × ');
+      if (!confirm(`組み合わせ「${names}」を削除しますか？`)) return;
       try {
-        const res = await apiFetch('/api/admin/config', 'POST', { updates });
+        const res = await apiFetch('/api/admin/combo', 'DELETE', {
+          stone_id_a: stoneA, stone_id_b: stoneB,
+        });
         const data = await res.json();
         if (res.ok) {
-          showToast('✅ 保存しました');
-          // マスターデータをリロード
-          const r2 = await apiFetch('/api/admin/master');
-          masterData = await r2.json();
-          renderAll();
+          showToast('✅ 削除しました');
+          await reloadMaster();
         } else {
-          showToast('❌ 保存失敗: ' + JSON.stringify(data.errors || data.error), true);
+          showToast('❌ ' + data.error, true);
         }
       } catch (e) {
         showToast('❌ エラー: ' + e.message, true);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '保存する';
       }
+    }
+
+    // ===== モーダル共通 =====
+    function openModal(title, bodyHtml, submitFn) {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').innerHTML = bodyHtml;
+      document.getElementById('modal-submit').disabled = false;
+      document.getElementById('modal-submit').textContent = '保存する';
+      _modalSubmitFn = submitFn;
+      document.getElementById('modal-overlay').classList.add('show');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('show');
+      _modalSubmitFn = null;
+    }
+
+    function onOverlayClick(e) {
+      if (e.target === document.getElementById('modal-overlay')) closeModal();
+    }
+
+    async function submitModal() {
+      if (_modalSubmitFn) {
+        const btn = document.getElementById('modal-submit');
+        btn.disabled = true;
+        btn.textContent = '保存中...';
+        try {
+          await _modalSubmitFn();
+        } finally {
+          btn.disabled = false;
+          btn.textContent = '保存する';
+        }
+      }
+    }
+
+    // ===== 石モーダル =====
+    function openStoneModal(stoneId) {
+      const stone = stoneId ? masterData.stones.find(s => s.stone_id === stoneId) : null;
+      const isNew = !stone;
+      const ep = stone?.element_profile || {};
+      const ap = stone?.aura_profile || {};
+      const auraKeys = ['intuition','clarity','stability','vitality','protection','love','expression','courage'];
+      const auraLabels = { intuition:'直感', clarity:'明晰', stability:'安定', vitality:'活力',
+                           protection:'保護', love:'愛情', expression:'表現', courage:'勇気' };
+      const elemLabels = { fire:'火（fire）', earth:'地（earth）', air:'風（air）', water:'水（water）' };
+
+      let auraHtml = auraKeys.map(k => `
+        <div>
+          <label>${auraLabels[k]}</label>
+          <input type="number" id="f-ap-${k}" step="0.1" min="0" max="1" value="${(ap[k]||0).toFixed(1)}">
+        </div>`).join('');
+
+      const html = `
+        <div class="form-row">
+          <label>石ID（半角英数字アンダースコア）</label>
+          <input type="text" id="f-sid" value="${stoneId || ''}" ${isNew ? '' : 'readonly'}
+            placeholder="例: tiger_eye">
+        </div>
+        <div class="form-row">
+          <label>石名</label>
+          <input type="text" id="f-sname" value="${esc(stone?.stone_name || '')}">
+        </div>
+        <div class="form-row">
+          <label>説明</label>
+          <textarea id="f-sdesc">${esc(stone?.description || '')}</textarea>
+        </div>
+        <div class="form-section">エレメントプロファイル（0.0〜1.0）</div>
+        <div class="form-grid4">
+          ${Object.entries(elemLabels).map(([k,lbl]) => `
+            <div>
+              <label>${lbl}</label>
+              <input type="number" id="f-ep-${k}" step="0.1" min="0" max="1" value="${(ep[k]||0).toFixed(1)}">
+            </div>`).join('')}
+        </div>
+        <div class="form-section">オーラプロファイル（0.0〜1.0）</div>
+        <div class="form-grid8">${auraHtml}</div>
+        <div class="form-row">
+          <label>カラータグ（カンマ区切り）</label>
+          <input type="text" id="f-color" value="${(stone?.color_tags || []).join(', ')}">
+        </div>
+        <div class="form-row">
+          <label>テーマタグ（カンマ区切り）</label>
+          <input type="text" id="f-theme" value="${(stone?.theme_tags || []).join(', ')}">
+        </div>
+        <div class="form-row">
+          <label>悩みタグ（カンマ区切り）</label>
+          <input type="text" id="f-worry" value="${(stone?.worry_tags || []).join(', ')}">
+        </div>
+        <div class="form-row">
+          <label>重み（通常1.0）</label>
+          <input type="number" id="f-weight" step="0.1" min="0.1" value="${(stone?.weight||1.0).toFixed(1)}">
+        </div>
+      `;
+      openModal(isNew ? '＋ 石を追加' : `石を編集：${stone.stone_name}`, html, () => saveStone(isNew));
+    }
+
+    async function saveStone(isNew) {
+      const stoneId = document.getElementById('f-sid').value.trim();
+      if (!stoneId) { showToast('❌ 石IDを入力してください', true); return; }
+      const splitTags = v => v.split(',').map(t=>t.trim()).filter(Boolean);
+      const stoneData = {
+        stone_name:  document.getElementById('f-sname').value.trim(),
+        description: document.getElementById('f-sdesc').value.trim(),
+        element_profile: {
+          fire:  parseFloat(document.getElementById('f-ep-fire').value)||0,
+          earth: parseFloat(document.getElementById('f-ep-earth').value)||0,
+          air:   parseFloat(document.getElementById('f-ep-air').value)||0,
+          water: parseFloat(document.getElementById('f-ep-water').value)||0,
+        },
+        aura_profile: {
+          intuition:  parseFloat(document.getElementById('f-ap-intuition').value)||0,
+          clarity:    parseFloat(document.getElementById('f-ap-clarity').value)||0,
+          stability:  parseFloat(document.getElementById('f-ap-stability').value)||0,
+          vitality:   parseFloat(document.getElementById('f-ap-vitality').value)||0,
+          protection: parseFloat(document.getElementById('f-ap-protection').value)||0,
+          love:       parseFloat(document.getElementById('f-ap-love').value)||0,
+          expression: parseFloat(document.getElementById('f-ap-expression').value)||0,
+          courage:    parseFloat(document.getElementById('f-ap-courage').value)||0,
+        },
+        color_tags: splitTags(document.getElementById('f-color').value),
+        theme_tags: splitTags(document.getElementById('f-theme').value),
+        worry_tags: splitTags(document.getElementById('f-worry').value),
+        weight: parseFloat(document.getElementById('f-weight').value)||1.0,
+      };
+      const url = isNew ? '/api/admin/stone' : `/api/admin/stone/${stoneId}`;
+      const method = isNew ? 'POST' : 'PUT';
+      const body = isNew ? { stone_id: stoneId, stone_data: stoneData } : { stone_data: stoneData };
+      const res = await apiFetch(url, method, body);
+      const data = await res.json();
+      if (res.ok) {
+        showToast('✅ 保存しました');
+        closeModal();
+        await reloadMaster();
+      } else {
+        showToast('❌ ' + data.error, true);
+      }
+    }
+
+    // ===== 組み合わせモーダル =====
+    function openComboModal(stoneA, stoneB) {
+      const combo = (stoneA && stoneB) ? masterData.combinations.find(c => {
+        const s = c.stones || [];
+        return (s[0] === stoneA && s[1] === stoneB) || (s[0] === stoneB && s[1] === stoneA);
+      }) : null;
+      const isNew = !combo;
+      const eb = combo?.element_bonus || {};
+      const ab = combo?.aura_bonus || {};
+      const stones = masterData.stones || [];
+      const stoneOptions = stones.map(s =>
+        `<option value="${s.stone_id}">${s.stone_name}</option>`
+      ).join('');
+
+      const auraKeys = ['intuition','clarity','stability','vitality','protection','love','expression','courage'];
+      const auraLabels = { intuition:'直感', clarity:'明晰', stability:'安定', vitality:'活力',
+                           protection:'保護', love:'愛情', expression:'表現', courage:'勇気' };
+
+      let auraHtml = auraKeys.map(k => `
+        <div>
+          <label>${auraLabels[k]}</label>
+          <input type="number" id="f-ab-${k}" step="0.1" min="0" max="1" value="${(ab[k]||0).toFixed(1)}">
+        </div>`).join('');
+
+      const setA = `<option value="" disabled selected>選択</option>${stoneOptions}`;
+      const setB = `<option value="" disabled selected>選択</option>${stoneOptions}`;
+
+      const html = `
+        <div class="form-grid2">
+          <div class="form-row">
+            <label>石A</label>
+            ${isNew
+              ? `<select id="f-ca">${setA}</select>`
+              : `<input type="text" id="f-ca" value="${stoneA}" readonly>`}
+          </div>
+          <div class="form-row">
+            <label>石B</label>
+            ${isNew
+              ? `<select id="f-cb">${setB}</select>`
+              : `<input type="text" id="f-cb" value="${stoneB}" readonly>`}
+          </div>
+        </div>
+        <div class="form-row">
+          <label>意味</label>
+          <textarea id="f-meaning">${esc(combo?.meaning || '')}</textarea>
+        </div>
+        <div class="form-row">
+          <label>テーマタグ（カンマ区切り）</label>
+          <input type="text" id="f-ctheme" value="${(combo?.theme_tags||[]).join(', ')}">
+        </div>
+        <div class="form-row">
+          <label>悩みタグ（カンマ区切り）</label>
+          <input type="text" id="f-cworry" value="${(combo?.worry_tags||[]).join(', ')}">
+        </div>
+        <div class="form-section">エレメントボーナス（0.0〜1.0）</div>
+        <div class="form-grid4">
+          <div><label>火</label><input type="number" id="f-eb-fire" step="0.1" min="0" max="1" value="${(eb.fire||0).toFixed(1)}"></div>
+          <div><label>地</label><input type="number" id="f-eb-earth" step="0.1" min="0" max="1" value="${(eb.earth||0).toFixed(1)}"></div>
+          <div><label>風</label><input type="number" id="f-eb-air" step="0.1" min="0" max="1" value="${(eb.air||0).toFixed(1)}"></div>
+          <div><label>水</label><input type="number" id="f-eb-water" step="0.1" min="0" max="1" value="${(eb.water||0).toFixed(1)}"></div>
+        </div>
+        <div class="form-section">オーラボーナス（0.0〜1.0）</div>
+        <div class="form-grid8">${auraHtml}</div>
+        <div class="form-row">
+          <label>重み（通常1.0）</label>
+          <input type="number" id="f-cweight" step="0.1" min="0.1" value="${(combo?.weight||1.0).toFixed(1)}">
+        </div>
+      `;
+      const title = isNew ? '＋ 組み合わせを追加' : `組み合わせを編集：${(combo?.stone_names||[]).join(' × ')}`;
+      openModal(title, html, () => saveCombo(isNew, stoneA, stoneB));
+    }
+
+    async function saveCombo(isNew) {
+      const splitTags = v => v.split(',').map(t=>t.trim()).filter(Boolean);
+      const caEl = document.getElementById('f-ca');
+      const cbEl = document.getElementById('f-cb');
+      const stoneA = caEl.tagName === 'SELECT' ? caEl.value : caEl.value;
+      const stoneB = cbEl.tagName === 'SELECT' ? cbEl.value : cbEl.value;
+      if (!stoneA || !stoneB) { showToast('❌ 石を両方選んでください', true); return; }
+      if (stoneA === stoneB) { showToast('❌ 同じ石は選べません', true); return; }
+      const effect = {
+        meaning:   document.getElementById('f-meaning').value.trim(),
+        theme_tags: splitTags(document.getElementById('f-ctheme').value),
+        worry_tags: splitTags(document.getElementById('f-cworry').value),
+        element_bonus: {
+          fire:  parseFloat(document.getElementById('f-eb-fire').value)||0,
+          earth: parseFloat(document.getElementById('f-eb-earth').value)||0,
+          air:   parseFloat(document.getElementById('f-eb-air').value)||0,
+          water: parseFloat(document.getElementById('f-eb-water').value)||0,
+        },
+        aura_bonus: {
+          intuition:  parseFloat(document.getElementById('f-ab-intuition').value)||0,
+          clarity:    parseFloat(document.getElementById('f-ab-clarity').value)||0,
+          stability:  parseFloat(document.getElementById('f-ab-stability').value)||0,
+          vitality:   parseFloat(document.getElementById('f-ab-vitality').value)||0,
+          protection: parseFloat(document.getElementById('f-ab-protection').value)||0,
+          love:       parseFloat(document.getElementById('f-ab-love').value)||0,
+          expression: parseFloat(document.getElementById('f-ab-expression').value)||0,
+          courage:    parseFloat(document.getElementById('f-ab-courage').value)||0,
+        },
+        weight: parseFloat(document.getElementById('f-cweight').value)||1.0,
+      };
+      const res = await apiFetch('/api/admin/combo', 'POST', {
+        stone_id_a: stoneA, stone_id_b: stoneB, effect,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast('✅ 保存しました');
+        closeModal();
+        await reloadMaster();
+      } else {
+        showToast('❌ ' + data.error, true);
+      }
+    }
+
+    // ===== 商品モーダル =====
+    let _partCounter = 0;
+
+    function openProductModal(productId) {
+      const product = productId ? masterData.products.find(p => p.product_id === productId) : null;
+      const isNew = !product;
+      const isExternal = isNew || String(productId || '').startsWith('X');
+      const stones = masterData.stones || [];
+      const stoneOptions = stones.map(s =>
+        `<option value="${s.stone_id}">${s.stone_name}</option>`
+      ).join('');
+      _partCounter = 0;
+
+      // パーツ行HTML生成
+      function buildPartRow(part, idx) {
+        _partCounter = Math.max(_partCounter, idx + 1);
+        const sOpts = stones.map(s =>
+          `<option value="${s.stone_id}" ${s.stone_id === part?.stone_id ? 'selected' : ''}>${s.stone_name}</option>`
+        ).join('');
+        return `
+          <div class="part-row" id="part-row-${idx}">
+            <select id="part-stone-${idx}"><option value="">石を選択</option>${sOpts}</select>
+            <select id="part-role-${idx}">
+              <option value="main" ${part?.role==='main'?'selected':''}>メイン</option>
+              <option value="sub" ${part?.role==='sub'?'selected':''}>サブ</option>
+              <option value="round" ${part?.role==='round'?'selected':''}>ラウンド</option>
+            </select>
+            <input type="number" id="part-size-${idx}" min="4" max="20" value="${part?.size||8}" placeholder="mm">
+            <button class="btn-part-del" onclick="removePart(${idx})">✕</button>
+          </div>`;
+      }
+
+      const parts = product?.parts || [{ stone_id: '', role: 'main', size: 10 }];
+      let partsHtml = parts.map((p, i) => buildPartRow(p, i)).join('');
+
+      const genderVal = product?.gender_mode || 'unisex';
+      const enabledChecked = (product?.enabled !== false) ? 'checked' : '';
+
+      const html = `
+        <div class="form-grid2">
+          <div class="form-row">
+            <label>商品ID</label>
+            <input type="text" id="f-pid" value="${productId || '（自動発番）'}" readonly>
+          </div>
+          <div class="form-row">
+            <label>WooCommerce ID</label>
+            <input type="text" id="f-wid" value="${product?.woo_product_id || ''}" ${!isExternal ? 'readonly' : ''} placeholder="（外部商品は不要）">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>SKU</label>
+          <input type="text" id="f-sku" value="${esc(product?.sku || '')}">
+        </div>
+        <div class="form-row">
+          <label>性別</label>
+          <select id="f-gender">
+            <option value="unisex" ${genderVal==='unisex'?'selected':''}>ユニセックス</option>
+            <option value="female" ${genderVal==='female'?'selected':''}>レディース</option>
+            <option value="male" ${genderVal==='male'?'selected':''}>メンズ</option>
+          </select>
+        </div>
+        <div class="form-section">石構成</div>
+        <div id="parts-container">${partsHtml}</div>
+        <button class="btn-part-add" onclick="addPart('${stoneOptions}')">＋ パーツを追加</button>
+        <div class="form-section">その他</div>
+        <div class="form-grid2">
+          <div class="form-row">
+            <label>有効</label>
+            <label class="toggle" style="margin-top:8px;">
+              <input type="checkbox" id="f-enabled" ${enabledChecked}>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>優先度（通常1.0）</label>
+            <input type="number" id="f-priority" step="0.1" min="0.1" max="3.0" value="${(product?.priority_weight||1.0).toFixed(1)}">
+          </div>
+        </div>
+        <div class="form-row">
+          <label>商品URL（外部URL・WooCommerce以外の場合）</label>
+          <input type="url" id="f-purl" value="${esc(product?.product_url || '')}" placeholder="https://example.com/product/...">
+        </div>
+      `;
+      openModal(isNew ? '＋ 外部商品を追加' : `商品を編集：${product.sku || productId}`, html, () => saveProduct(isNew, productId));
+    }
+
+    function addPart(stoneOptions) {
+      const idx = _partCounter++;
+      const rowHtml = `
+        <div class="part-row" id="part-row-${idx}">
+          <select id="part-stone-${idx}"><option value="">石を選択</option>${stoneOptions}</select>
+          <select id="part-role-${idx}">
+            <option value="main">メイン</option>
+            <option value="sub">サブ</option>
+            <option value="round">ラウンド</option>
+          </select>
+          <input type="number" id="part-size-${idx}" min="4" max="20" value="8" placeholder="mm">
+          <button class="btn-part-del" onclick="removePart(${idx})">✕</button>
+        </div>`;
+      document.getElementById('parts-container').insertAdjacentHTML('beforeend', rowHtml);
+    }
+
+    function removePart(idx) {
+      const row = document.getElementById(`part-row-${idx}`);
+      if (row) row.remove();
+    }
+
+    async function saveProduct(isNew, productId) {
+      const parts = [];
+      document.querySelectorAll('[id^="part-row-"]').forEach(row => {
+        const idx = row.id.replace('part-row-', '');
+        const stoneId = document.getElementById(`part-stone-${idx}`)?.value;
+        const role = document.getElementById(`part-role-${idx}`)?.value;
+        const size = parseInt(document.getElementById(`part-size-${idx}`)?.value) || 8;
+        if (stoneId && role) {
+          parts.push({ stone_id: stoneId, role, size });
+        }
+      });
+      if (parts.length === 0) { showToast('❌ パーツを1つ以上追加してください', true); return; }
+
+      const wooId = document.getElementById('f-wid').value;
+      const productData = {
+        woo_product_id: parseInt(wooId) || 0,
+        sku:            document.getElementById('f-sku').value.trim(),
+        parts,
+        gender_mode:    document.getElementById('f-gender').value,
+        enabled:        document.getElementById('f-enabled').checked,
+        priority_weight: parseFloat(document.getElementById('f-priority').value) || 1.0,
+        product_url:    document.getElementById('f-purl').value.trim(),
+      };
+
+      let res;
+      if (isNew) {
+        res = await apiFetch('/api/admin/product', 'POST', { product_data: productData });
+      } else {
+        res = await apiFetch(`/api/admin/product/${productId}`, 'PUT', { product_data: productData });
+      }
+      const data = await res.json();
+      if (res.ok) {
+        showToast(isNew ? `✅ 追加しました（ID: ${data.product_id}）` : '✅ 保存しました');
+        closeModal();
+        await reloadMaster();
+      } else {
+        showToast('❌ ' + data.error, true);
+      }
+    }
+
+    // --- 保存共通 ---
+    async function saveConfig(updates) {
+      const res = await apiFetch('/api/admin/config', 'POST', { updates });
+      return res;
     }
 
     async function clearCache() {
@@ -451,11 +1064,7 @@
         const res = await apiFetch('/api/admin/clear-cache', 'POST');
         const data = await res.json();
         showToast(res.ok ? '✅ キャッシュをクリアしました' : '❌ ' + data.error, !res.ok);
-        if (res.ok) {
-          const r2 = await apiFetch('/api/admin/master');
-          masterData = await r2.json();
-          renderAll();
-        }
+        if (res.ok) await reloadMaster();
       } catch (e) { showToast('❌ エラー: ' + e.message, true); }
     }
 
@@ -470,11 +1079,7 @@
           data.status === 'ok' ? `✅ 移行完了\n${lines}` : `⚠️ 一部失敗\n${lines}\n${errLines}`,
           data.status !== 'ok'
         );
-        if (data.status !== 'error') {
-          const r2 = await apiFetch('/api/admin/master');
-          masterData = await r2.json();
-          renderAll();
-        }
+        if (data.status !== 'error') await reloadMaster();
       } catch (e) { showToast('❌ エラー: ' + e.message, true); }
     }
 
@@ -483,7 +1088,12 @@
       t.textContent = msg;
       t.className = 'show' + (isError ? ' error' : '');
       clearTimeout(t._timer);
-      t._timer = setTimeout(() => { t.className = ''; }, 3000);
+      t._timer = setTimeout(() => { t.className = ''; }, 3500);
+    }
+
+    // HTML特殊文字エスケープ
+    function esc(str) {
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
   </script>
 </body>

@@ -74,7 +74,7 @@ EXPECTED_HEADERS = {
     ],
     PRODUCT_MASTER_SHEET_NAME: [
         "product_id", "woo_product_id", "sku",
-        "parts_json", "gender_mode", "enabled", "priority_weight",
+        "parts_json", "gender_mode", "enabled", "priority_weight", "product_url",
     ],
     BRACELET_SELECTION_SHEET_NAME: [
         "selection_id", "created_at", "user_id", "diagnosis_id",
@@ -691,12 +691,13 @@ def get_product_master_from_sheet() -> dict | None:
             except Exception:
                 parts = []
             result[pid] = {
-                "woo_product_id": int(r.get("woo_product_id", 0)),
+                "woo_product_id": int(r.get("woo_product_id", 0)) if r.get("woo_product_id") else 0,
                 "sku":            str(r.get("sku", "")),
                 "parts":          parts,
                 "gender_mode":    str(r.get("gender_mode", "unisex")),
                 "enabled":        _safe_bool(r.get("enabled", True)),
                 "priority_weight": _safe_float(r.get("priority_weight", 1.0), 1.0),
+                "product_url":    str(r.get("product_url", "")),
             }
         logger.info("商品マスターをシートから読み込みました: %d件", len(result))
         return result if result else None
@@ -720,8 +721,181 @@ def write_product_master_to_sheet(product_master: dict) -> None:
             p.get("gender_mode", "unisex"),
             str(p.get("enabled", True)).lower(),
             p.get("priority_weight", 1.0),
+            p.get("product_url", ""),
         ])
     ws.clear()
     ws.update("A1", rows, value_input_option="USER_ENTERED")
     _invalidate_cache(PRODUCT_MASTER_SHEET_NAME)
     logger.info("商品マスターをシートに書き込みました: %d件", len(product_master))
+
+
+# ===== マスターCRUD（1件操作） =====
+
+def upsert_stone(stone_id: str, stone_data: dict) -> None:
+    """石マスターの1件を追加または更新してキャッシュをリセットする"""
+    ws = _get_worksheet(STONE_MASTER_SHEET_NAME)
+    headers = EXPECTED_HEADERS[STONE_MASTER_SHEET_NAME]
+    ep = stone_data.get("element_profile", {})
+    ap = stone_data.get("aura_profile", {})
+    row = [
+        stone_id,
+        stone_data.get("stone_name", ""),
+        stone_data.get("description", ""),
+        ep.get("fire", 0), ep.get("earth", 0), ep.get("air", 0), ep.get("water", 0),
+        ap.get("intuition", 0), ap.get("clarity", 0), ap.get("stability", 0),
+        ap.get("vitality", 0), ap.get("protection", 0), ap.get("love", 0),
+        ap.get("expression", 0), ap.get("courage", 0),
+        _join_tags(stone_data.get("zodiac", [])),
+        _join_tags(stone_data.get("planet", [])),
+        _join_tags(stone_data.get("birth_month", [])),
+        _join_tags(stone_data.get("numerology_affinity", [])),
+        _join_tags(stone_data.get("color_tags", [])),
+        _join_tags(stone_data.get("theme_tags", [])),
+        _join_tags(stone_data.get("worry_tags", [])),
+        stone_data.get("weight", 1.0),
+    ]
+    ids = ws.col_values(1)
+    if stone_id in ids:
+        row_num = ids.index(stone_id) + 1
+        col_end = chr(ord('A') + len(headers) - 1)
+        ws.update(f"A{row_num}:{col_end}{row_num}", [row], value_input_option="USER_ENTERED")
+        logger.info("石マスター更新: %s", stone_id)
+    else:
+        _append_row_with_retry(ws, row)
+        logger.info("石マスター追加: %s", stone_id)
+    _invalidate_cache(STONE_MASTER_SHEET_NAME)
+    from api.stone_master import invalidate_stone_master_cache
+    invalidate_stone_master_cache()
+
+
+def delete_stone(stone_id: str) -> bool:
+    """石マスターから1件削除する。成功時True。"""
+    ws = _get_worksheet(STONE_MASTER_SHEET_NAME)
+    ids = ws.col_values(1)
+    if stone_id not in ids:
+        return False
+    row_num = ids.index(stone_id) + 1
+    ws.delete_rows(row_num)
+    _invalidate_cache(STONE_MASTER_SHEET_NAME)
+    from api.stone_master import invalidate_stone_master_cache
+    invalidate_stone_master_cache()
+    logger.info("石マスター削除: %s", stone_id)
+    return True
+
+
+def upsert_combination(stone_id_a: str, stone_id_b: str, effect: dict) -> None:
+    """組み合わせマスターの1件を追加または更新する"""
+    ws = _get_worksheet(STONE_COMBO_SHEET_NAME)
+    headers = EXPECTED_HEADERS[STONE_COMBO_SHEET_NAME]
+    eb = effect.get("element_bonus", {})
+    ab = effect.get("aura_bonus", {})
+    ids_sorted = sorted([stone_id_a, stone_id_b])
+    row = [
+        ids_sorted[0], ids_sorted[1],
+        _join_tags(effect.get("theme_tags", [])),
+        _join_tags(effect.get("worry_tags", [])),
+        eb.get("fire", 0), eb.get("earth", 0), eb.get("air", 0), eb.get("water", 0),
+        ab.get("intuition", 0), ab.get("clarity", 0), ab.get("stability", 0),
+        ab.get("vitality", 0), ab.get("protection", 0), ab.get("love", 0),
+        ab.get("expression", 0), ab.get("courage", 0),
+        effect.get("meaning", ""),
+        effect.get("weight", 1.0),
+    ]
+    all_rows = ws.get_all_values()
+    found_row = None
+    for i, r in enumerate(all_rows[1:], 2):
+        a = r[0] if len(r) > 0 else ""
+        b = r[1] if len(r) > 1 else ""
+        if frozenset({a, b}) == frozenset({stone_id_a, stone_id_b}):
+            found_row = i
+            break
+    if found_row:
+        col_end = chr(ord('A') + len(headers) - 1)
+        ws.update(f"A{found_row}:{col_end}{found_row}", [row], value_input_option="USER_ENTERED")
+        logger.info("組み合わせ更新: %s × %s", stone_id_a, stone_id_b)
+    else:
+        _append_row_with_retry(ws, row)
+        logger.info("組み合わせ追加: %s × %s", stone_id_a, stone_id_b)
+    _invalidate_cache(STONE_COMBO_SHEET_NAME)
+    from api.stone_combination_master import invalidate_combination_master_cache
+    invalidate_combination_master_cache()
+
+
+def delete_combination(stone_id_a: str, stone_id_b: str) -> bool:
+    """組み合わせマスターから1件削除する。成功時True。"""
+    ws = _get_worksheet(STONE_COMBO_SHEET_NAME)
+    all_rows = ws.get_all_values()
+    for i, r in enumerate(all_rows[1:], 2):
+        a = r[0] if len(r) > 0 else ""
+        b = r[1] if len(r) > 1 else ""
+        if frozenset({a, b}) == frozenset({stone_id_a, stone_id_b}):
+            ws.delete_rows(i)
+            _invalidate_cache(STONE_COMBO_SHEET_NAME)
+            from api.stone_combination_master import invalidate_combination_master_cache
+            invalidate_combination_master_cache()
+            logger.info("組み合わせ削除: %s × %s", stone_id_a, stone_id_b)
+            return True
+    return False
+
+
+def generate_external_product_id() -> str:
+    """外部商品用のXプレフィックスIDを発番する（例: X001）"""
+    ws = _get_worksheet(PRODUCT_MASTER_SHEET_NAME)
+    ids = ws.col_values(1)
+    external_ids = [i for i in ids[1:] if str(i).startswith("X")]
+    if not external_ids:
+        return "X001"
+    nums = []
+    for eid in external_ids:
+        try:
+            nums.append(int(eid[1:]))
+        except (ValueError, IndexError):
+            pass
+    next_num = max(nums) + 1 if nums else 1
+    return f"X{next_num:03d}"
+
+
+def upsert_product(product_id: str, product_data: dict) -> None:
+    """商品マスターの1件を追加または更新する"""
+    import json as _json
+    ws = _get_worksheet(PRODUCT_MASTER_SHEET_NAME)
+    headers = EXPECTED_HEADERS[PRODUCT_MASTER_SHEET_NAME]
+    row = [
+        product_id,
+        product_data.get("woo_product_id", ""),
+        product_data.get("sku", ""),
+        _json.dumps(product_data.get("parts", []), ensure_ascii=False),
+        product_data.get("gender_mode", "unisex"),
+        str(product_data.get("enabled", True)).lower(),
+        product_data.get("priority_weight", 1.0),
+        product_data.get("product_url", ""),
+    ]
+    ids = ws.col_values(1)
+    if product_id in ids:
+        row_num = ids.index(product_id) + 1
+        col_end = chr(ord('A') + len(headers) - 1)
+        ws.update(f"A{row_num}:{col_end}{row_num}", [row], value_input_option="USER_ENTERED")
+        logger.info("商品マスター更新: %s", product_id)
+    else:
+        _append_row_with_retry(ws, row)
+        logger.info("商品マスター追加: %s", product_id)
+    _invalidate_cache(PRODUCT_MASTER_SHEET_NAME)
+    from api.product_master import invalidate_product_master_cache
+    invalidate_product_master_cache()
+
+
+def delete_product(product_id: str) -> bool:
+    """商品マスターから1件削除する（Xプレフィックスの外部商品のみ）。"""
+    if not str(product_id).startswith("X"):
+        return False
+    ws = _get_worksheet(PRODUCT_MASTER_SHEET_NAME)
+    ids = ws.col_values(1)
+    if product_id not in ids:
+        return False
+    row_num = ids.index(product_id) + 1
+    ws.delete_rows(row_num)
+    _invalidate_cache(PRODUCT_MASTER_SHEET_NAME)
+    from api.product_master import invalidate_product_master_cache
+    invalidate_product_master_cache()
+    logger.info("商品マスター削除: %s", product_id)
+    return True

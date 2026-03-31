@@ -850,10 +850,6 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
             "beads":           None,  # diagnose.pyがrank1石で生成
         }
 
-        # 商品候補
-        main = result["stones_main"][0]["name"]
-        result["products"] = choose_products(main, result["stones_sub"])
-
         return result
 
     except Exception as e:

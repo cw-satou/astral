@@ -388,21 +388,27 @@ def admin_get_master():
         ]
         products.append(entry)
 
-    # 石マスター（シート優先・表示用整形）
+    # 石マスター（シート優先・全フィールド返却）
     stone_master = get_stone_master_data()
     stones = []
     for sid, s in stone_master.items():
         stones.append({
             "stone_id": sid,
             "stone_name": s["stone_name"],
-            "description": s["description"],
-            "element_profile": s["element_profile"],
-            "theme_tags": s["theme_tags"],
-            "worry_tags": s["worry_tags"],
+            "description": s.get("description", ""),
+            "element_profile": s.get("element_profile", {}),
+            "aura_profile": s.get("aura_profile", {}),
+            "color_tags": s.get("color_tags", []),
+            "theme_tags": s.get("theme_tags", []),
+            "worry_tags": s.get("worry_tags", []),
+            "zodiac": s.get("zodiac", []),
+            "planet": s.get("planet", []),
+            "birth_month": s.get("birth_month", []),
+            "numerology_affinity": s.get("numerology_affinity", []),
             "weight": s.get("weight", 1.0),
         })
 
-    # 組み合わせマスター（シート優先・frozensetをリストに変換）
+    # 組み合わせマスター（シート優先・全フィールド返却）
     combinations = []
     for key, effect in get_combination_master_data().items():
         stone_ids = sorted(list(key))
@@ -413,9 +419,11 @@ def admin_get_master():
         combinations.append({
             "stones": stone_ids,
             "stone_names": stone_names,
-            "theme_tags": effect["theme_tags"],
-            "worry_tags": effect["worry_tags"],
-            "meaning": effect["meaning"],
+            "theme_tags": effect.get("theme_tags", []),
+            "worry_tags": effect.get("worry_tags", []),
+            "element_bonus": effect.get("element_bonus", {}),
+            "aura_bonus": effect.get("aura_bonus", {}),
+            "meaning": effect.get("meaning", ""),
             "weight": effect.get("weight", 1.0),
         })
 
@@ -425,6 +433,127 @@ def admin_get_master():
         "stones": stones,
         "combinations": combinations,
     })
+
+
+@app.route('/api/admin/stone', methods=['POST'])
+def admin_create_stone():
+    """管理画面用：石マスターに1件追加する"""
+    if not _check_admin_auth():
+        return jsonify({"error": "認証が必要です"}), 401
+    body = request.get_json(force=True, silent=True) or {}
+    stone_id = body.get("stone_id", "").strip()
+    stone_data = body.get("stone_data", {})
+    if not stone_id or not stone_data:
+        return jsonify({"error": "stone_idとstone_dataが必要です"}), 400
+    try:
+        from api.utils_sheet import upsert_stone
+        upsert_stone(stone_id, stone_data)
+        return jsonify({"status": "ok", "stone_id": stone_id})
+    except Exception as e:
+        logger.exception("石マスター作成エラー")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/admin/stone/<stone_id>', methods=['PUT', 'DELETE'])
+def admin_stone(stone_id):
+    """管理画面用：石マスターを更新または削除する"""
+    if not _check_admin_auth():
+        return jsonify({"error": "認証が必要です"}), 401
+    if request.method == 'PUT':
+        body = request.get_json(force=True, silent=True) or {}
+        stone_data = body.get("stone_data", body)
+        try:
+            from api.utils_sheet import upsert_stone
+            upsert_stone(stone_id, stone_data)
+            return jsonify({"status": "ok", "stone_id": stone_id})
+        except Exception as e:
+            logger.exception("石マスター更新エラー")
+            return jsonify({"error": str(e)}), 500
+    else:  # DELETE
+        try:
+            from api.utils_sheet import delete_stone
+            ok = delete_stone(stone_id)
+            if ok:
+                return jsonify({"status": "ok"})
+            return jsonify({"error": "石が見つかりません"}), 404
+        except Exception as e:
+            logger.exception("石マスター削除エラー")
+            return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/admin/combo', methods=['POST', 'DELETE'])
+def admin_combo():
+    """管理画面用：組み合わせマスターを追加または削除する"""
+    if not _check_admin_auth():
+        return jsonify({"error": "認証が必要です"}), 401
+    body = request.get_json(force=True, silent=True) or {}
+    stone_id_a = body.get("stone_id_a", "")
+    stone_id_b = body.get("stone_id_b", "")
+    if not stone_id_a or not stone_id_b:
+        return jsonify({"error": "stone_id_aとstone_id_bが必要です"}), 400
+    if request.method == 'POST':
+        effect = body.get("effect", {})
+        try:
+            from api.utils_sheet import upsert_combination
+            upsert_combination(stone_id_a, stone_id_b, effect)
+            return jsonify({"status": "ok"})
+        except Exception as e:
+            logger.exception("組み合わせ作成エラー")
+            return jsonify({"error": str(e)}), 500
+    else:  # DELETE
+        try:
+            from api.utils_sheet import delete_combination
+            ok = delete_combination(stone_id_a, stone_id_b)
+            if ok:
+                return jsonify({"status": "ok"})
+            return jsonify({"error": "組み合わせが見つかりません"}), 404
+        except Exception as e:
+            logger.exception("組み合わせ削除エラー")
+            return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/admin/product', methods=['POST'])
+def admin_create_product():
+    """管理画面用：外部商品をX-プレフィックスIDで追加する"""
+    if not _check_admin_auth():
+        return jsonify({"error": "認証が必要です"}), 401
+    body = request.get_json(force=True, silent=True) or {}
+    product_data = body.get("product_data", body)
+    try:
+        from api.utils_sheet import generate_external_product_id, upsert_product
+        product_id = generate_external_product_id()
+        upsert_product(product_id, product_data)
+        return jsonify({"status": "ok", "product_id": product_id})
+    except Exception as e:
+        logger.exception("商品作成エラー")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/admin/product/<product_id>', methods=['PUT', 'DELETE'])
+def admin_product(product_id):
+    """管理画面用：商品マスターを更新または削除する（削除はX-プレフィックスのみ）"""
+    if not _check_admin_auth():
+        return jsonify({"error": "認証が必要です"}), 401
+    if request.method == 'PUT':
+        body = request.get_json(force=True, silent=True) or {}
+        product_data = body.get("product_data", body)
+        try:
+            from api.utils_sheet import upsert_product
+            upsert_product(product_id, product_data)
+            return jsonify({"status": "ok", "product_id": product_id})
+        except Exception as e:
+            logger.exception("商品更新エラー")
+            return jsonify({"error": str(e)}), 500
+    else:  # DELETE
+        try:
+            from api.utils_sheet import delete_product
+            ok = delete_product(product_id)
+            if ok:
+                return jsonify({"status": "ok"})
+            return jsonify({"error": "削除できません（WooCommerce商品またはIDが見つかりません）"}), 400
+        except Exception as e:
+            logger.exception("商品削除エラー")
+            return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/admin/config', methods=['POST'])
