@@ -8,6 +8,7 @@
 import logging
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 
 from flask import request, jsonify
@@ -22,6 +23,7 @@ from api.utils_sheet import add_diagnosis, format_stones, update_diagnosis
 from api.utils_geocode import geocode
 from api.matching import recommend_products, build_user_profile
 from api.utils_woo import fetch_woo_products
+from api.utils_image import generate_stone_beads_image
 
 logger = logging.getLogger(__name__)
 
@@ -218,12 +220,27 @@ def diagnose():
         # マッチングエンジンで上位3商品を取得
         top_products = recommend_products(user_profile, top_n=3)
 
-        # ブレスレット画像はutils_perplexity側で並列生成済み（ai_result["images"]["bracelet"]）
-        rank1_bracelet_image: str | None = (ai_result.get("images") or {}).get("bracelet")
+        # ランク1商品の石リストを取得
+        rank1_stones = top_products[0].get("stones", []) if top_products else []
+        rank1_seed = "-".join(sorted(rank1_stones))
 
-        # WooCommerceから商品詳細を取得して補完
+        # WooCommerce取得とGemini石ビーズ画像生成を並列実行
+        rank1_bracelet_image: str | None = None
         woo_ids = [p["woo_product_id"] for p in top_products]
-        woo_details = fetch_woo_products(woo_ids)
+
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            fut_woo = ex.submit(fetch_woo_products, woo_ids)
+            # rank1の石が1本以上あれば画像生成
+            fut_img = (
+                ex.submit(generate_stone_beads_image, rank1_stones[0], rank1_stones[1:], rank1_seed)
+                if rank1_stones else None
+            )
+            woo_details = fut_woo.result()
+            if fut_img is not None:
+                try:
+                    rank1_bracelet_image = fut_img.result(timeout=30)
+                except Exception as e:
+                    logger.warning("石ビーズ画像生成タイムアウト/エラー: %s", e)
 
         recommendations = []
         for product in top_products:
@@ -233,12 +250,13 @@ def diagnose():
             recommendations.append({
                 "rank":                   product["rank"],
                 "score":                  product["score"],
+                "score_breakdown":        product.get("score_breakdown"),
                 "woo_product_id":         pid,
                 "sku":                    product.get("sku", ""),
                 "product_name":           woo.get("name", ""),
                 "price":                  woo.get("price", ""),
                 "image_url":              woo.get("image_url", ""),
-                # ランク1はGemini生成ブレスレット画像を優先、なければWooCommerce画像
+                # ランク1はGemini生成石ビーズ画像を優先、なければWooCommerce画像
                 "generated_image_url":    rank1_bracelet_image if is_rank1 else None,
                 "product_url":            woo.get("product_url", ""),
                 "stones":                 product.get("stones", []),
