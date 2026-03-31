@@ -18,7 +18,6 @@ GCS保存時は base64 ではなく GCS の公開URLを返すため、
 """
 
 import os
-import io
 import json
 import base64
 import hashlib

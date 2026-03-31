@@ -12,7 +12,7 @@
 import logging
 from itertools import combinations
 
-from api.stone_master import STONE_MASTER, get_stone
+from api.stone_master import get_stone
 from api.stone_combination_master import get_combination_effect
 from api.role_weight import get_role_weight, get_combination_role_weight
 from api.product_master import get_enabled_products, ProductEntry

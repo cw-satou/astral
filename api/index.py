@@ -10,7 +10,6 @@ from api.utils_sheet import get_diagnosis, upsert_profile, get_profile
 from api.utils_perplexity import generate_today_fortune, calculate_chart
 from api.utils_geocode import geocode
 from api.woo_webhook import woo_webhook
-from api.utils_woo import fetch_woo_products
 from api.utils_rate_limit import rate_limited
 from api.utils_sheet import get_config, set_config
 

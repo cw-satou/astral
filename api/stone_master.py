@@ -293,38 +293,30 @@ STONE_MASTER: dict = {
 }
 
 
-import time as _time
+from api.cache import SheetCache
 
-# シートキャッシュ（TTL: 300秒）
-_sheet_cache: dict = {"data": None, "expires": 0.0}
-
-
-def _load_from_sheet() -> dict | None:
-    """stone_masterシートからデータを読み込む（失敗時はNone）"""
-    try:
-        from api.utils_sheet import get_stone_master_from_sheet
-        return get_stone_master_from_sheet()
-    except Exception:
-        return None
+_cache = SheetCache("stone_master")
 
 
 def get_stone_master_data() -> dict:
     """シート優先でマスターデータを返す（失敗時はハードコードにフォールバック）"""
-    now = _time.time()
-    if _sheet_cache["data"] and now < _sheet_cache["expires"]:
-        return _sheet_cache["data"]
-    data = _load_from_sheet()
-    if data:
-        _sheet_cache["data"] = data
-        _sheet_cache["expires"] = now + 300
-        return data
+    cached = _cache.get()
+    if cached is not None:
+        return cached
+    try:
+        from api.utils_sheet import get_stone_master_from_sheet
+        data = get_stone_master_from_sheet()
+        if data:
+            _cache.set(data)
+            return data
+    except Exception:
+        pass
     return STONE_MASTER
 
 
 def invalidate_stone_master_cache() -> None:
-    """石マスターのメモリキャッシュを破棄してシートから再読み込みさせる"""
-    _sheet_cache["data"] = None
-    _sheet_cache["expires"] = 0.0
+    """石マスターのキャッシュを破棄してシートから再読み込みさせる"""
+    _cache.invalidate()
 
 
 def get_stone(stone_id: str) -> dict | None:

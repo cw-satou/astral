@@ -156,38 +156,30 @@ PRODUCT_MASTER: dict[str, ProductEntry] = {
 }
 
 
-import time as _time
+from api.cache import SheetCache
 
-# シートキャッシュ（TTL: 300秒）
-_sheet_cache: dict = {"data": None, "expires": 0.0}
-
-
-def _load_from_sheet() -> dict | None:
-    """product_masterシートからデータを読み込む（失敗時はNone）"""
-    try:
-        from api.utils_sheet import get_product_master_from_sheet
-        return get_product_master_from_sheet()
-    except Exception:
-        return None
+_cache = SheetCache("product_master")
 
 
 def get_product_master_data() -> dict:
-    """シート優先で商品マスターデータを返す（失敗時はハードコードにフォールバック）"""
-    now = _time.time()
-    if _sheet_cache["data"] and now < _sheet_cache["expires"]:
-        return _sheet_cache["data"]
-    data = _load_from_sheet()
-    if data:
-        _sheet_cache["data"] = data
-        _sheet_cache["expires"] = now + 300
-        return data
+    """シート優先で商品マスターを返す（失敗時はハードコードにフォールバック）"""
+    cached = _cache.get()
+    if cached is not None:
+        return cached
+    try:
+        from api.utils_sheet import get_product_master_from_sheet
+        data = get_product_master_from_sheet()
+        if data:
+            _cache.set(data)
+            return data
+    except Exception:
+        pass
     return PRODUCT_MASTER
 
 
 def invalidate_product_master_cache() -> None:
-    """商品マスターのメモリキャッシュを破棄してシートから再読み込みさせる"""
-    _sheet_cache["data"] = None
-    _sheet_cache["expires"] = 0.0
+    """商品マスターのキャッシュを破棄してシートから再読み込みさせる"""
+    _cache.invalidate()
 
 
 def get_product(product_id: int | str) -> ProductEntry | None:
