@@ -26,42 +26,35 @@ interface Recommendation {
   diagnosis_message?: string;
 }
 
+/** 単一スコアバー行（ラベル・バー・パーセントを1行で表示） */
+function buildSingleBar(label: string, pct: number, gradient: string): string {
+  return `
+    <div style="margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-size:12px;color:#666;">${label}</span>
+        <span style="font-size:13px;font-weight:600;color:#222;">${pct}%</span>
+      </div>
+      <div style="background:#e8e8e8;border-radius:6px;height:6px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:${gradient};border-radius:6px;transition:width .6s ease;"></div>
+      </div>
+    </div>
+  `;
+}
+
 /** 一致率バーと内訳HTML */
 function buildScoreBar(score: number, breakdown?: { element: number; aura: number; theme: number; worry: number }): string {
   const pct = Math.min(100, Math.round(score));
   const breakdownHtml = breakdown ? `
     <div style="margin-top:10px;border-top:1px solid #e8dcc8;padding-top:8px;">
-      <div style="font-size:11px;color:#888;margin-bottom:6px;">内訳</div>
-      ${[
-        ['星座相性', breakdown.element, '#c8860b'],
-        ['オーラ', breakdown.aura, '#9b6b3a'],
-        ['テーマ', breakdown.theme, '#7a9e4e'],
-        ['悩み', breakdown.worry, '#6b5b9e'],
-      ].map(([label, val, color]) => {
-        const v = Math.min(100, Math.round(val as number));
-        return `
-          <div style="margin-bottom:5px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-              <span style="font-size:11px;color:#666;">${label}</span>
-              <span style="font-size:11px;font-weight:600;color:${color};">${v}%</span>
-            </div>
-            <div style="background:#e8e8e8;border-radius:4px;height:5px;overflow:hidden;">
-              <div style="width:${v}%;height:100%;background:${color};border-radius:4px;transition:width .6s ease;"></div>
-            </div>
-          </div>
-        `;
-      }).join('')}
+      ${buildSingleBar('星座相性', Math.min(100, Math.round(breakdown.element)), 'linear-gradient(90deg,#c8860b,#e6a020)')}
+      ${buildSingleBar('オーラ',   Math.min(100, Math.round(breakdown.aura)),    'linear-gradient(90deg,#9b6b3a,#c4895a)')}
+      ${buildSingleBar('テーマ',   Math.min(100, Math.round(breakdown.theme)),   'linear-gradient(90deg,#5a8a3a,#7ab55a)')}
+      ${buildSingleBar('悩み',     Math.min(100, Math.round(breakdown.worry)),   'linear-gradient(90deg,#6b5b9e,#9b8bc8)')}
     </div>
   ` : '';
   return `
     <div style="margin:6px 0 2px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-        <span style="font-size:12px;color:#666;">星読み一致率</span>
-        <span style="font-size:13px;font-weight:600;color:#222;">${pct}%</span>
-      </div>
-      <div style="background:#e8e8e8;border-radius:6px;height:6px;overflow:hidden;">
-        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#b8860b,#daa520);border-radius:6px;transition:width .6s ease;"></div>
-      </div>
+      ${buildSingleBar('星読み一致率', pct, 'linear-gradient(90deg,#b8860b,#daa520)')}
       ${breakdownHtml}
     </div>
   `;

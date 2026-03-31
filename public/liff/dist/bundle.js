@@ -1021,41 +1021,32 @@ ${adviceList}`);
   }
 
   // public/liff/src/products.ts
+  function buildSingleBar(label, pct, gradient) {
+    return `
+    <div style="margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
+        <span style="font-size:12px;color:#666;">${label}</span>
+        <span style="font-size:13px;font-weight:600;color:#222;">${pct}%</span>
+      </div>
+      <div style="background:#e8e8e8;border-radius:6px;height:6px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:${gradient};border-radius:6px;transition:width .6s ease;"></div>
+      </div>
+    </div>
+  `;
+  }
   function buildScoreBar(score, breakdown) {
     const pct = Math.min(100, Math.round(score));
     const breakdownHtml = breakdown ? `
     <div style="margin-top:10px;border-top:1px solid #e8dcc8;padding-top:8px;">
-      <div style="font-size:11px;color:#888;margin-bottom:6px;">\u5185\u8A33</div>
-      ${[
-      ["\u661F\u5EA7\u76F8\u6027", breakdown.element, "#c8860b"],
-      ["\u30AA\u30FC\u30E9", breakdown.aura, "#9b6b3a"],
-      ["\u30C6\u30FC\u30DE", breakdown.theme, "#7a9e4e"],
-      ["\u60A9\u307F", breakdown.worry, "#6b5b9e"]
-    ].map(([label, val, color]) => {
-      const v = Math.min(100, Math.round(val));
-      return `
-          <div style="margin-bottom:5px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
-              <span style="font-size:11px;color:#666;">${label}</span>
-              <span style="font-size:11px;font-weight:600;color:${color};">${v}%</span>
-            </div>
-            <div style="background:#e8e8e8;border-radius:4px;height:5px;overflow:hidden;">
-              <div style="width:${v}%;height:100%;background:${color};border-radius:4px;transition:width .6s ease;"></div>
-            </div>
-          </div>
-        `;
-    }).join("")}
+      ${buildSingleBar("\u661F\u5EA7\u76F8\u6027", Math.min(100, Math.round(breakdown.element)), "linear-gradient(90deg,#c8860b,#e6a020)")}
+      ${buildSingleBar("\u30AA\u30FC\u30E9", Math.min(100, Math.round(breakdown.aura)), "linear-gradient(90deg,#9b6b3a,#c4895a)")}
+      ${buildSingleBar("\u30C6\u30FC\u30DE", Math.min(100, Math.round(breakdown.theme)), "linear-gradient(90deg,#5a8a3a,#7ab55a)")}
+      ${buildSingleBar("\u60A9\u307F", Math.min(100, Math.round(breakdown.worry)), "linear-gradient(90deg,#6b5b9e,#9b8bc8)")}
     </div>
   ` : "";
     return `
     <div style="margin:6px 0 2px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
-        <span style="font-size:12px;color:#666;">\u661F\u8AAD\u307F\u4E00\u81F4\u7387</span>
-        <span style="font-size:13px;font-weight:600;color:#222;">${pct}%</span>
-      </div>
-      <div style="background:#e8e8e8;border-radius:6px;height:6px;overflow:hidden;">
-        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#b8860b,#daa520);border-radius:6px;transition:width .6s ease;"></div>
-      </div>
+      ${buildSingleBar("\u661F\u8AAD\u307F\u4E00\u81F4\u7387", pct, "linear-gradient(90deg,#b8860b,#daa520)")}
       ${breakdownHtml}
     </div>
   `;
