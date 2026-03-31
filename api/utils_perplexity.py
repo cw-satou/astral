@@ -762,6 +762,7 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
                 chart_info_for_img["element_lack_ja"],
                 main_stone_name,
                 f"destiny-{seed_base}",
+                result.get("destiny_map", ""),      # AIテキストをプロンプトに反映
             )
             f_element = executor.submit(
                 generate_element_balance,
@@ -770,6 +771,7 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
                 chart_info_for_img["wind"],
                 chart_info_for_img["water"],
                 f"element-{seed_base}",
+                result.get("element_diagnosis", ""), # AIテキストをプロンプトに反映
             )
             f_beads = executor.submit(
                 generate_stone_beads_image,

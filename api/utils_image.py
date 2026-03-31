@@ -329,8 +329,10 @@ def generate_oracle_card_image(card_name: str, card_name_en: str, is_upright: bo
     return _generate_image_gemini(prompt, cache)
 
 
-def generate_destiny_scene(element_lack_ja: str, stone_name: str, seed_key: str = "") -> str | None:
-    """運命の地図シーン画像を生成する"""
+def generate_destiny_scene(
+    element_lack_ja: str, stone_name: str, seed_key: str = "", context_text: str = ""
+) -> str | None:
+    """運命の地図シーン画像を生成する。context_textにAI生成テキストを渡すと内容を反映する。"""
     element_scenes = {
         "火": "volcanic landscape with warm aurora and golden flames dancing across a twilight sky, ember particles",
         "地": "ancient crystal cave with glowing minerals, moss-covered stones surrounded by earthen energy and roots",
@@ -338,18 +340,29 @@ def generate_destiny_scene(element_lack_ja: str, stone_name: str, seed_key: str 
         "水": "moonlit underwater temple with bioluminescent coral and jellyfish, calm ocean surface reflecting stars",
     }
     scene = element_scenes.get(element_lack_ja, "cosmic nebula with swirling galaxies and constellation patterns")
+
+    # AIメッセージの冒頭から雰囲気ヒントを抽出（最大80文字）
+    mood_hint = ""
+    if context_text:
+        mood_hint = f"Mood inspired by this reading: '{context_text[:80]}'. "
+
     prompt = (
         f"A breathtaking fantasy landscape: {scene}. "
         f"A glowing {stone_name} gemstone crystal floating in the center, emanating mystical energy. "
+        f"{mood_hint}"
         "Dreamlike ethereal atmosphere, constellation patterns in the sky. "
         "Digital painting, artstation quality, ultra detailed, no text, no people."
     )
-    cache = _build_cache_key("destiny", seed_key) if seed_key else ""
+    # テキスト内容も含めたシードにすることでメッセージごとに固有の画像を生成
+    full_seed = f"{seed_key}-{context_text[:40]}" if context_text else seed_key
+    cache = _build_cache_key("destiny", full_seed) if full_seed else ""
     return _generate_image_gemini(prompt, cache)
 
 
-def generate_element_balance(fire: int, earth: int, wind: int, water: int, seed_key: str = "") -> str | None:
-    """エレメントバランス画像を生成する"""
+def generate_element_balance(
+    fire: int, earth: int, wind: int, water: int, seed_key: str = "", context_text: str = ""
+) -> str | None:
+    """エレメントバランス画像を生成する。context_textにAI生成テキストを渡すと内容を反映する。"""
     dominant = max([("fire", fire), ("earth", earth), ("wind", wind), ("water", water)], key=lambda x: x[1])[0]
     moods = {
         "fire": "fiery red and gold energy orb glowing intensely",
@@ -358,13 +371,20 @@ def generate_element_balance(fire: int, earth: int, wind: int, water: int, seed_
         "water": "deep blue and teal flowing water stream with moonlight",
     }
     dominant_mood = moods.get(dominant, "balanced cosmic energy")
+
+    mood_hint = ""
+    if context_text:
+        mood_hint = f"Mood inspired by: '{context_text[:80]}'. "
+
     prompt = (
         "Four elemental energy orbs floating in a cosmic mandala: "
         f"fire (red), earth (green), wind (white), water (blue). {dominant_mood} is dominant and largest. "
+        f"{mood_hint}"
         "Sacred geometry background, abstract spiritual visualization, "
         "glowing particles, symmetrical composition, ethereal digital art, no text."
     )
-    cache = _build_cache_key("element", seed_key) if seed_key else ""
+    full_seed = f"{seed_key}-{context_text[:40]}" if context_text else seed_key
+    cache = _build_cache_key("element", full_seed) if full_seed else ""
     return _generate_image_gemini(prompt, cache)
 
 
