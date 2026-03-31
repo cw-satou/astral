@@ -368,6 +368,19 @@ def generate_element_balance(fire: int, earth: int, wind: int, water: int, seed_
     return _generate_image_gemini(prompt, cache)
 
 
+def generate_stone_beads_image(main_stone: str, sub_stones: list[str] | None = None, seed_key: str = "") -> str | None:
+    """選ばれた石のビーズ画像を生成する（ブレスレット形状なし）"""
+    all_stones = [main_stone] + (sub_stones or [])
+    stones_desc = " and ".join(all_stones)
+    prompt = (
+        f"A few polished {stones_desc} gemstone beads scattered loosely on white marble surface. "
+        "Macro close-up photography, soft natural studio lighting, minimal elegant composition. "
+        "High-end gemstone product photography, ultra detailed, no text, no bracelet, no string, no jewelry."
+    )
+    cache = _build_cache_key("beads", seed_key) if seed_key else ""
+    return _generate_image_gemini(prompt, cache)
+
+
 def generate_bracelet_image(main_stone: str, sub_stones: list[str] | None = None, seed_key: str = "") -> str | None:
     """ブレスレット提案画像を生成する"""
     stones_desc = main_stone

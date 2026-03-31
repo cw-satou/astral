@@ -738,6 +738,7 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
             generate_oracle_card_image,
             generate_destiny_scene,
             generate_element_balance,
+            generate_stone_beads_image,
         )
 
         # diagnosis_id用のシードキー（同じ診断なら同じ画像）
@@ -745,11 +746,12 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
 
         chart_info_for_img = build_chart_data(user_input, chart_data)
         main_stone_name = result["stones_main"][0]["name"]
+        sub_stone_names = [s["name"] for s in result.get("stones_sub", [])]
 
         result["stone_colors"] = get_stone_colors(main_stone_name)
 
-        # 3枚の画像を並列生成
-        with ThreadPoolExecutor(max_workers=3) as executor:
+        # 4枚の画像を並列生成
+        with ThreadPoolExecutor(max_workers=4) as executor:
             f_oracle = executor.submit(
                 generate_oracle_card_image,
                 card["name"], card["en"], is_upright,
@@ -769,9 +771,16 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
                 chart_info_for_img["water"],
                 f"element-{seed_base}",
             )
+            f_beads = executor.submit(
+                generate_stone_beads_image,
+                main_stone_name,
+                sub_stone_names,
+                f"beads-{seed_base}",
+            )
             oracle_image  = f_oracle.result()
             destiny_image = f_destiny.result()
             element_image = f_element.result()
+            beads_image   = f_beads.result()
 
         result["oracle_card"] = {
             "name": card["name"],
@@ -784,6 +793,7 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
         result["images"] = {
             "destiny_scene":   destiny_image,
             "element_balance": element_image,
+            "beads":           beads_image,
         }
 
         # 商品候補

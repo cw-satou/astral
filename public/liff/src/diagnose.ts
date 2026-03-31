@@ -185,8 +185,9 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
   async function showGroup1(): Promise<void> {
     await addMsg(`星の配置とエレメントの流れをもとに、${nameForDisplay}の今を読み解いていきます。`, false);
 
-    if (result.destiny_map) {
-      await appendSection(chatBox, '✨ 星の地図', result.destiny_map as string, images.destiny_scene);
+    // destiny_map テキストまたは画像があれば表示
+    if (result.destiny_map || images.destiny_scene) {
+      await appendSection(chatBox, '✨ 星の地図', (result.destiny_map as string) || '', images.destiny_scene);
     }
     if (result.past) {
       await appendSection(chatBox, '🌙 これまでの流れ', result.past as string);
@@ -237,7 +238,7 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
     await addMsg('今のあなたを整える石と、そのサポートをお伝えします。', false);
 
     if (result.bracelet_proposal) {
-      await appendSection(chatBox, '💎 あなたに選ばれた石', result.bracelet_proposal as string, images.bracelet);
+      await appendSection(chatBox, '💎 あなたに選ばれた石', result.bracelet_proposal as string, images.beads);
     }
     if (result.stone_support_message) {
       await appendSection(chatBox, '💐 石からのメッセージ', result.stone_support_message as string);

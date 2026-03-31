@@ -293,9 +293,9 @@ def diagnose():
             "oracle_message":       ai_result.get("oracle_message", ""),
             # 画像: utils_perplexityが生成した画像 + rank1ブレスレット画像はrecommendationsに含む
             "images": {
-                "destiny_scene":    (ai_result.get("images") or {}).get("destiny_scene"),
-                "element_balance":  (ai_result.get("images") or {}).get("element_balance"),
-                "bracelet":         rank1_bracelet_image or (ai_result.get("images") or {}).get("bracelet"),
+                "destiny_scene":   (ai_result.get("images") or {}).get("destiny_scene"),
+                "element_balance": (ai_result.get("images") or {}).get("element_balance"),
+                "beads":           (ai_result.get("images") or {}).get("beads"),
             },
             "element_lack":         chart_info.get("element_lack", ""),
             "element_lack_ja":      chart_info.get("element_lack_ja", ""),

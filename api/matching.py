@@ -144,8 +144,8 @@ def _tag_overlap_score(user_tags: list[str], product_tags: list[str]) -> float:
     return overlap / len(user_set)
 
 
-def _score_product(user_profile: dict, product_profile: dict) -> float:
-    """商品とユーザープロファイルの一致率（0.0〜100.0）を計算する"""
+def _score_product(user_profile: dict, product_profile: dict) -> dict:
+    """商品とユーザープロファイルの一致率を計算する（合計と内訳を返す）"""
     e_score = _cosine_similarity(user_profile["element"], product_profile["element"])
     a_score = _cosine_similarity(user_profile["aura"],    product_profile["aura"])
     t_score = _tag_overlap_score(user_profile["theme_tags"], product_profile["theme_tags"])
@@ -157,7 +157,13 @@ def _score_product(user_profile: dict, product_profile: dict) -> float:
         t_score * SCORE_WEIGHTS["theme"]   +
         w_score * SCORE_WEIGHTS["worry"]
     )
-    return round(total * 100, 1)
+    return {
+        "total":   round(total * 100, 1),
+        "element": round(e_score * 100, 1),
+        "aura":    round(a_score * 100, 1),
+        "theme":   round(t_score * 100, 1),
+        "worry":   round(w_score * 100, 1),
+    }
 
 
 # ===== 推薦理由生成 =====
@@ -221,9 +227,9 @@ def recommend_products(
     for product in enabled_products:
         try:
             product_profile = _calc_product_profile(product)
-            score = _score_product(user_profile, product_profile)
+            score_data = _score_product(user_profile, product_profile)
             # priority_weight による補正（最大±5点）
-            score = min(100.0, score * product.get("priority_weight", 1.0))
+            total = min(100.0, score_data["total"] * product.get("priority_weight", 1.0))
 
             stone_names = []
             for part in product["parts"]:
@@ -234,7 +240,13 @@ def recommend_products(
             reason = _build_reason(user_profile, product_profile, product)
 
             results.append({
-                "score":              score,
+                "score":              total,
+                "score_breakdown": {
+                    "element": score_data["element"],
+                    "aura":    score_data["aura"],
+                    "theme":   score_data["theme"],
+                    "worry":   score_data["worry"],
+                },
                 "woo_product_id":     product["woo_product_id"],
                 "sku":                product["sku"],
                 "recommendation_reason": reason,

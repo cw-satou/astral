@@ -12,12 +12,13 @@ import { getUserNameForDisplay } from './profile';
 interface Recommendation {
   rank: number;
   score: number;
+  score_breakdown?: { element: number; aura: number; theme: number; worry: number };
   woo_product_id: number;
   sku: string;
   product_name: string;
   price: string | number;
   image_url: string;
-  generated_image_url?: string | null;  // Gemini生成ブレスレット画像（ランク1のみ）
+  generated_image_url?: string | null;
   product_url: string;
   stones: string[];
   recommendation_reason: string;
@@ -25,9 +26,24 @@ interface Recommendation {
   diagnosis_message?: string;
 }
 
-/** 一致率をバー表示用のHTML（既存デザインに合わせたシンプルな表現） */
-function buildScoreBar(score: number): string {
+/** 一致率バーと内訳HTML */
+function buildScoreBar(score: number, breakdown?: { element: number; aura: number; theme: number; worry: number }): string {
   const pct = Math.min(100, Math.round(score));
+  const breakdownHtml = breakdown ? `
+    <div style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;">
+      ${[
+        ['星座', breakdown.element],
+        ['オーラ', breakdown.aura],
+        ['テーマ', breakdown.theme],
+        ['悩み', breakdown.worry],
+      ].map(([label, val]) => `
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;">
+          <span>${label}</span>
+          <span style="color:#b8860b;font-weight:600;">${Math.round(val as number)}%</span>
+        </div>
+      `).join('')}
+    </div>
+  ` : '';
   return `
     <div style="margin:6px 0 2px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">
@@ -37,6 +53,7 @@ function buildScoreBar(score: number): string {
       <div style="background:#e8e8e8;border-radius:6px;height:6px;overflow:hidden;">
         <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#b8860b,#daa520);border-radius:6px;transition:width .6s ease;"></div>
       </div>
+      ${breakdownHtml}
     </div>
   `;
 }
@@ -77,7 +94,7 @@ function buildProductCard(rec: Recommendation, idx: number, isSelected: boolean)
       ${imageHtml}
       <p style="font-size:15px;font-weight:600;color:#222;margin:4px 0 6px;line-height:1.5;">${rec.product_name || rec.sku || `候補${rank}`}</p>
       <p style="font-size:13px;color:#666;margin:0 0 6px;">使用石：${stonesText}</p>
-      ${buildScoreBar(rec.score || 0)}
+      ${buildScoreBar(rec.score || 0, rec.score_breakdown)}
       <p style="font-size:13px;color:#444;margin-top:8px;line-height:1.6;">${reason}</p>
     </div>
   `;
