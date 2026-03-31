@@ -286,15 +286,19 @@ def _build_cache_key(prefix: str, seed: str) -> str:
 # ===== 各シーン生成関数 =====
 
 def generate_oracle_card_image(card_name: str, card_name_en: str, is_upright: bool, seed_key: str = "") -> str | None:
-    """オラクルカード画像を生成する"""
-    position = "upright position, radiating light" if is_upright else "reversed position, with shadow"
+    """オラクルカード画像を生成する（一般的なオラクルカードのテーマ絵柄）"""
+    position_desc = (
+        "bathed in warm golden light, uplifting and expansive composition"
+        if is_upright else
+        "in cool shadow with soft moonlight, introspective and quiet atmosphere"
+    )
     prompt = (
-        f"A mystical oracle tarot card featuring a {card_name_en} gemstone crystal, "
-        f"{position}. Ornate golden art nouveau border frame with intricate patterns. "
-        "Dark velvet background with sacred geometry. "
-        "Ethereal divine light rays emanating from the crystal. "
-        "Fantasy tarot card illustration, highly detailed, magical atmosphere. "
-        "No text on the card."
+        f"A beautiful oracle card illustration: {card_name_en}. "
+        f"The scene is {position_desc}. "
+        "Ornate golden art nouveau border frame with intricate botanical and celestial patterns. "
+        "Soft watercolor and gouache style, ethereal and dreamlike. "
+        "Inspired by angel oracle cards — serene, uplifting, symbolic imagery. "
+        "No text, no letters, no numbers on the card."
     )
     cache = _build_cache_key("oracle", seed_key) if seed_key else ""
     return _generate_image_gemini(prompt, cache)
@@ -332,26 +336,43 @@ def generate_destiny_scene(
 def generate_element_balance(
     fire: int, earth: int, wind: int, water: int, seed_key: str = "", context_text: str = ""
 ) -> str | None:
-    """エレメントバランス画像を生成する。context_textにAI生成テキストを渡すと内容を反映する。"""
-    dominant = max([("fire", fire), ("earth", earth), ("wind", wind), ("water", water)], key=lambda x: x[1])[0]
-    moods = {
-        "fire": "fiery red and gold energy orb glowing intensely",
-        "earth": "earthy brown and emerald green crystal formation",
-        "wind": "silver and white swirling wind current with sparkles",
-        "water": "deep blue and teal flowing water stream with moonlight",
+    """エレメントバランス画像を生成する。不足エレメントを中心に配置する。"""
+    elements = [("fire", fire), ("earth", earth), ("wind", wind), ("water", water)]
+
+    # 不足エレメント（最小値）を中心に、過剰エレメント（最大値）を周辺に
+    lacking  = min(elements, key=lambda x: x[1])[0]
+    dominant = max(elements, key=lambda x: x[1])[0]
+
+    # 不足エレメントのビジュアル表現（中心・空洞・欠乏感）
+    lacking_visuals = {
+        "fire":  "pale fading ember at center, barely glowing, surrounded by dominant energies",
+        "earth": "cracked dry stone at center, hollow and depleted, surrounded by dominant energies",
+        "wind":  "still faint mist at center, motionless, surrounded by dominant energies",
+        "water": "empty shallow pool at center, almost dry, surrounded by dominant energies",
     }
-    dominant_mood = moods.get(dominant, "balanced cosmic energy")
+    # 過剰エレメントのビジュアル表現（周辺・大きく・明るい）
+    dominant_visuals = {
+        "fire":  "blazing fire orbs radiating outward in red and gold",
+        "earth": "lush green crystal pillars standing tall around the edges",
+        "wind":  "swirling silver wind currents spiraling outward",
+        "water": "deep blue water waves flowing outward with moonlight",
+    }
+
+    lacking_desc  = lacking_visuals.get(lacking,  "faded element at center")
+    dominant_desc = dominant_visuals.get(dominant, "bright energy around the edges")
 
     mood_hint = ""
     if context_text:
-        mood_hint = f"Mood inspired by: '{context_text[:80]}'. "
+        mood_hint = f"Mood: '{context_text[:80]}'. "
 
     prompt = (
-        "Four elemental energy orbs floating in a cosmic mandala: "
-        f"fire (red), earth (green), wind (white), water (blue). {dominant_mood} is dominant and largest. "
+        f"Cosmic mandala showing elemental energy imbalance. "
+        f"CENTER: {lacking_desc}. "
+        f"SURROUNDING: {dominant_desc}. "
+        f"Four elements (fire=red, earth=green, wind=white, water=blue) arranged in circular sacred geometry. "
         f"{mood_hint}"
-        "Sacred geometry background, abstract spiritual visualization, "
-        "glowing particles, symmetrical composition, ethereal digital art, no text."
+        "The center element is visually dim and hollow, emphasizing absence. "
+        "Ethereal spiritual visualization, glowing particles, no text, no labels."
     )
     # キャッシュキーはテキストを含めない（同じ条件なら必ずキャッシュヒット）
     cache = _build_cache_key("element", seed_key) if seed_key else ""

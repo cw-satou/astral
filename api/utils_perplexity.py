@@ -79,38 +79,101 @@ ELEMENT_JA = {
 
 # ===== オラクルカード定義 =====
 
-CRYSTAL_ORACLE_CARDS = [
+ORACLE_CARDS = [
     {
-        "name": "アメジスト",
-        "en": "Amethyst crystal",
-        "meaning_up": "精神の安定・直感の覚醒",
-        "meaning_rev": "不安・逃避・考えすぎ",
+        "name": "豊かさの扉",
+        "en": "abundance door with golden light",
+        "meaning_up": "豊かさへの流れが開く・受け取る準備ができている",
+        "meaning_rev": "受け取ることへの抵抗・自己制限のパターン",
     },
     {
-        "name": "ラピスラズリ",
-        "en": "Lapis Lazuli crystal",
-        "meaning_up": "真実・洞察・精神性の成長",
-        "meaning_rev": "自己不信・コミュニケーションの滞り",
+        "name": "変容の炎",
+        "en": "transformation flame rising from darkness",
+        "meaning_up": "変化を受け入れることで新しい自分へ",
+        "meaning_rev": "変化への恐れ・現状への執着",
     },
     {
-        "name": "カーネリアン・サードニクス",
-        "en": "Carnelian Sardonyx crystal",
-        "meaning_up": "行動力・情熱・自己表現",
-        "meaning_rev": "衝動・エネルギーの空回り",
+        "name": "愛と調和",
+        "en": "heart of light surrounded by blooming flowers",
+        "meaning_up": "愛のエネルギーが満ちている・関係性の調和",
+        "meaning_rev": "自己愛の不足・感情の閉じ込め",
     },
     {
-        "name": "マラカイト",
-        "en": "Malachite crystal",
-        "meaning_up": "深い癒やし・感情の解毒",
-        "meaning_rev": "感情の停滞・過去への執着",
+        "name": "手放しの風",
+        "en": "wind releasing white feathers into sky",
+        "meaning_up": "手放すことで軽くなる・執着からの解放",
+        "meaning_rev": "手放せない何か・過去への引き戻し",
     },
     {
-        "name": "アイリスクォーツ",
-        "en": "Iris Quartz crystal",
-        "meaning_up": "希望・再生・波動の調整",
-        "meaning_rev": "気力不足・未来への不安",
+        "name": "内なる声",
+        "en": "glowing compass in a quiet moonlit forest",
+        "meaning_up": "直感を信じるとき・内側からの答え",
+        "meaning_rev": "外の声に振り回されている・自分を見失いかけている",
+    },
+    {
+        "name": "勇気の一歩",
+        "en": "lone figure stepping forward into dawn light",
+        "meaning_up": "踏み出す力がある・恐れを超えた先に道がある",
+        "meaning_rev": "迷いで足が止まっている・自信の喪失",
+    },
+    {
+        "name": "癒しの泉",
+        "en": "serene healing spring in an enchanted forest",
+        "meaning_up": "心と体の回復期・癒しを受け取る",
+        "meaning_rev": "疲れを無視している・休息への抵抗",
+    },
+    {
+        "name": "新しい夜明け",
+        "en": "sunrise over mountains with rainbow light",
+        "meaning_up": "新しい始まりの予兆・リセットの時",
+        "meaning_rev": "古いパターンへの固執・過去を引きずっている",
+    },
+    {
+        "name": "守護の翼",
+        "en": "angelic wings of light protecting from above",
+        "meaning_up": "守られている・見えないサポートがある",
+        "meaning_rev": "孤立感・信頼できるものを探している",
+    },
+    {
+        "name": "静寂の知恵",
+        "en": "ancient tree with roots of starlight in silent night",
+        "meaning_up": "立ち止まって内省するとき・答えは内側にある",
+        "meaning_rev": "焦りで判断が曇っている・冷静さを取り戻す必要",
+    },
+    {
+        "name": "つながりの光",
+        "en": "golden threads connecting stars in the cosmos",
+        "meaning_up": "大切なつながりが育っている・縁の深まり",
+        "meaning_rev": "孤独感・本当のつながりへの渇望",
+    },
+    {
+        "name": "創造の種",
+        "en": "seed of light sprouting from dark soil into radiance",
+        "meaning_up": "創造力が湧いている・アイデアを形にするとき",
+        "meaning_rev": "表現への恐れ・才能を隠している",
+    },
+    {
+        "name": "信頼と委ね",
+        "en": "leaf floating peacefully on a mirror lake",
+        "meaning_up": "流れに委ねることで進む・宇宙への信頼",
+        "meaning_rev": "コントロールへの執着・手放せない力み",
+    },
+    {
+        "name": "希望の星",
+        "en": "single star shining brightly through storm clouds",
+        "meaning_up": "どんな状況でも光はある・希望を持ち続ける",
+        "meaning_rev": "希望を見失いかけている・暗闇の中にいる",
+    },
+    {
+        "name": "自己愛の鏡",
+        "en": "luminous mirror reflecting inner beauty and light",
+        "meaning_up": "自分を愛することが最初の一歩・価値に気づく",
+        "meaning_rev": "自己批判・自分を後回しにしている",
     },
 ]
+
+# 後方互換性のためエイリアス
+CRYSTAL_ORACLE_CARDS = ORACLE_CARDS
 
 # ===== 在庫石データ =====
 
@@ -533,7 +596,6 @@ def create_user_prompt(
     problem_text = (user_input.get("problem") or "").strip()
 
     # ユーザーが具体的な悩みを書いている場合は、それを最優先で扱う
-    problem_instruction = ""
     if problem_text:
         problem_instruction = f"""
 【最重要】ユーザーが自分の言葉で書いた悩み:
@@ -573,19 +635,24 @@ def create_user_prompt(
 "present_future": "今の状態と、これからの変化の方向性を200文字程度で。「いまのあなたは〜という状態にあります」と現状を整理し、「〜を意識することで」と具体的な行動につながるヒントを伝える。ユーザーの悩みに直接沿って書く。",
 "element_diagnosis": "星座バランスから分かるエネルギーの偏りを150文字程度で。「最近、〇〇な気持ちになることはありませんか？」と問いかけてから、バランスの特徴を説明する。ユーザーの悩みに絡めた具体例を1つ入れる。",
 "oracle_message": "引いたカード「{oracle_result['card']['name']}」の{position_str}が示すヒントを150文字程度で。「このカードが示すのは〜ということです」と、今のあなたへの示唆として伝える。ユーザーの悩みへの気づきにつなげる。",
-"bracelet_proposal": "この石を日常に取り入れることで期待できる変化を150文字程度で。ユーザーの悩みに関連する具体的な場面（例：「〜で困っているとき、この石を身につけることで」）を描く。",
-"stone_support_message": "選ばれた石の特性がユーザーの現状にどう作用するかを200文字程度で。「この石の特性は〜で、あなたの〜という状況に対して」と、石の性質と現状のマッチングを具体的に説明する。",
+"bracelet_proposal": "今のあなたに必要な石のエネルギーを日常に取り入れることで期待できる変化を150文字程度で。ユーザーの悩みに関連する具体的な場面（例：「〜で困っているとき、石を身につけることで」）を描く。",
+"stone_support_message": "今のあなたに必要な石のエネルギー特性がユーザーの現状にどう作用するかを200文字程度で。不足エレメントを補う石の性質と、それがどうユーザーの状況に働きかけるかを具体的に説明する。",
 "daily_advice": "今日からできる具体的なアクションを3つ、それぞれ25文字以内で。カンマ区切り。ユーザーの悩みに関連する実践的な行動を含める。",
 "lucky_color": "今日意識するとよいカラー（1色、日本語）",
 "affirmation": "自己肯定のひと言を50文字程度で。「私は…」で始める。ユーザーの悩みに関連した前向きな言葉にする。",
-"chosen_stone": {{
-  "name": "選ばれた石の名前（日本語）",
-  "reason": "ユーザーの悩み・星座バランス・カードの観点からその石が適している理由を1〜2文で。悩みへの言及を必ず含める。"
-}},
 "element": "ユーザーに必要なエレメント（火/地/風/水）",
-"theme": "テーマ（恋愛/癒し/行動/直感）"
+"theme": "テーマ（恋愛/癒し/行動/直感）",
+"theme_weights": {{
+  "テーマタグ（下記から選んで重みを付ける）": 0.0〜1.0,
+  "使えるタグ例：行動力、情熱、創造性、自己表現、愛情、調和、自己愛、癒し、変容、前進、保護、直感、真実、知性、安定、浄化、再生、勇気": 0.0
+}},
+"worry_weights": {{
+  "悩みタグ（下記から選んで重みを付ける）": 0.0〜1.0,
+  "使えるタグ例：仕事、恋愛、人間関係、金運、健康、迷い、不安、自信不足、停滞感、感情の揺れ、踏み出せない、変化への恐れ、孤独感、疲れ": 0.0
+}}
 }}
 
+theme_weights・worry_weights はユーザーの状況に当てはまるタグだけを含め、関係ないタグは省略する。
 必ずJSON形式のみで出力。JSON以外のテキストや説明は一切不要。
 英語が一文字でも含まれていたらやり直し。
 """
@@ -637,15 +704,16 @@ def generate_today_fortune(user_input: dict, chart_data: dict = None) -> str:
 def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict:
     """AIを使ったブレスレット診断を実行する
 
-    オラクルカードをランダムに引き、ユーザーの情報と合わせて
-    AIに鑑定を依頼し、石の選定まで行う。
+    オラクルカードをランダムに引き、ユーザー情報と合わせて診断テキストを生成する。
+    theme_weights・worry_weights を数値で返し、後続のマッチングに使用する。
+    軸となる石はマッチングエンジンが後から決定する。
     """
     client = _get_client()
     if not client:
         return {"error": "鑑定APIの設定が完了していません"}
 
-    # オラクルカードを引く
-    card = random.choice(CRYSTAL_ORACLE_CARDS)
+    # オラクルカードを引く（一般的なテーマカード）
+    card = random.choice(ORACLE_CARDS)
     is_upright = random.choice([True, False])
     meaning = card["meaning_up"] if is_upright else card["meaning_rev"]
 
@@ -657,7 +725,7 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
 
     system_msg = (
         "あなたは、西洋占星術と天然石の特性に詳しいパーソナルアドバイザーです。\n"
-        "ユーザーの悩みを起点に、ホロスコープで傾向を分析し、最適な石を提案してください。\n\n"
+        "ユーザーの悩みを起点に、ホロスコープで傾向を分析し、診断レポートを作成してください。\n\n"
         "【最重要ルール】\n"
         "ユーザーが自分の言葉で書いた「具体的な悩み」が診断の中心です。\n"
         "ホロスコープや星座はその悩みを読み解くための補足情報として使い、\n"
@@ -666,11 +734,8 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
         "分かりやすい診断・アドバイスの言葉で伝えてください。\n\n"
         "【前提条件】\n"
         "- ユーザーの「悩み詳細」を最優先で読み取り、具体的に応えること。\n"
-        "- この段階ではブレスレットの個数・配置は決めず、「最適な石の種類」だけを提案します。\n"
-        "- destiny_map では、出生時間・出生地の情報があれば星座バランスの分析に活かしてください。\n\n"
-        f"【石の候補】\n{SELECTABLE_STONES}\n\n"
-        "※水晶は特別な石です。\n"
-        "人生の転換期や強い浄化が必要な場合のみ選択してください。\n"
+        "- 軸となる石はすでに決定済みです。stone_support_message・bracelet_proposal はその石について書くこと。\n"
+        "- destiny_map では、出生時間・出生地の情報があれば星座バランスの分析に活かしてください。\n"
     ) + SYSTEM_PROMPT
 
     user_msg = create_user_prompt(user_input, oracle_result, chart_data)
@@ -710,62 +775,53 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
         result.setdefault("element", "water")
         result.setdefault("theme", choose_theme(user_input.get("concerns", [])))
 
-        # 選ばれた石の処理
-        chosen_stone = result.get("chosen_stone") or {}
-        chosen_name = chosen_stone.get("name", "ラピスラズリ")
-        chosen_reason = chosen_stone.get(
-            "reason",
-            f"あなたの運命を導く守護石として{chosen_name}が選ばれました。",
-        )
+        # 軸となる石はマッチングエンジンが後から決定する（diagnose.pyで上書き）
+        result["stone_name"] = ""
 
-        ai_stones = [{"name": chosen_name, "reason": chosen_reason}]
-
-        main_stones = choose_main_stones(ai_stones)
-        sub_stones = choose_sub_stones(main_stones)
-
-        result["stones_for_user"] = main_stones + sub_stones
-        result["stones_main"] = main_stones
-        result["stones_sub"] = sub_stones
+        # theme_weights・worry_weightsをマッチング用に正規化して保持
+        result["theme_weights"] = {
+            k: float(v) for k, v in (result.get("theme_weights") or {}).items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)
+        }
+        result["worry_weights"] = {
+            k: float(v) for k, v in (result.get("worry_weights") or {}).items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)
+        }
 
         # エレメント情報
         chart_info = build_chart_data(user_input, chart_data)
         result["element_lack"] = chart_info["element_lack"]
 
-        # オラクルカード情報と画像生成
+        # 画像生成（オラクルカード・星の地図・エレメントバランスの3枚）
+        # beads画像はdiagnose.pyがrank1ブレスレットの石で生成する
         from concurrent.futures import ThreadPoolExecutor
         from api.utils_image import (
-            get_stone_colors,
             generate_oracle_card_image,
             generate_destiny_scene,
             generate_element_balance,
-            generate_stone_beads_image,
         )
 
         chart_info_for_img = build_chart_data(user_input, chart_data)
-        main_stone_name = result["stones_main"][0]["name"]
-        sub_stone_names = [s["name"] for s in result.get("stones_sub", [])]
+        # 画像生成時の石名はエレメント不足に対応する代表石（石は後から確定）
+        stone_for_img = "水晶"
 
-        result["stone_colors"] = get_stone_colors(main_stone_name)
-
-        # キャッシュキーは内容ベース（同じ石・エレメント・カードなら別ユーザーでもキャッシュ共有）
-        # 誕生日など個人情報はキーに含めない
+        # キャッシュキーは内容ベース
         position_key = "up" if is_upright else "rev"
-        element_key  = f"{chart_info_for_img['element_lack_ja']}-{main_stone_name}"
+        element_key  = f"{chart_info_for_img['element_lack_ja']}-{stone_for_img}"
         balance_key  = f"{chart_info_for_img['fire']}-{chart_info_for_img['earth']}-{chart_info_for_img['wind']}-{chart_info_for_img['water']}"
-        beads_key    = "-".join(sorted([main_stone_name] + sub_stone_names))
 
-        # 4枚の画像を並列生成
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        # 3枚の画像を並列生成
+        with ThreadPoolExecutor(max_workers=3) as executor:
             f_oracle = executor.submit(
                 generate_oracle_card_image,
                 card["name"], card["en"], is_upright,
-                f"oracle-{card['name']}-{position_key}",   # カード名+正逆のみ
+                f"oracle-{card['name']}-{position_key}",
             )
             f_destiny = executor.submit(
                 generate_destiny_scene,
                 chart_info_for_img["element_lack_ja"],
-                main_stone_name,
-                f"destiny-{element_key}",                   # エレメント+石名のみ
+                stone_for_img,
+                f"destiny-{element_key}",
                 result.get("destiny_map", ""),
             )
             f_element = executor.submit(
@@ -774,32 +830,24 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
                 chart_info_for_img["earth"],
                 chart_info_for_img["wind"],
                 chart_info_for_img["water"],
-                f"element-{balance_key}",                   # バランス数値のみ
+                f"element-{balance_key}",
                 result.get("element_diagnosis", ""),
-            )
-            f_beads = executor.submit(
-                generate_stone_beads_image,
-                main_stone_name,
-                sub_stone_names,
-                f"beads-{beads_key}",                       # 石名の組み合わせのみ
             )
             oracle_image  = f_oracle.result()
             destiny_image = f_destiny.result()
             element_image = f_element.result()
-            beads_image   = f_beads.result()
 
         result["oracle_card"] = {
             "name": card["name"],
             "meaning": meaning,
             "is_upright": is_upright,
-            "colors": get_stone_colors(card["name"]),
             "image_url": oracle_image,
         }
 
         result["images"] = {
             "destiny_scene":   destiny_image,
             "element_balance": element_image,
-            "beads":           beads_image,
+            "beads":           None,  # diagnose.pyがrank1石で生成
         }
 
         # 商品候補

@@ -205,7 +205,11 @@ def diagnose():
 
         chart_info = build_chart_data(req, chart_data)
 
-        # AI診断文＋オラクルカード生成
+        # ユーザープロファイル構築（ホロスコープ＋悩みキーワードによる初期版）
+        problem_text = req.get("problem", "") or ""
+        base_profile = _build_user_profile_from_chart(chart_info, concerns, problem_text)
+
+        # AI診断文＋オラクルカード生成（テーマ・悩み重みも出力させる）
         ai_result = generate_bracelet_reading(req, chart_data=chart_data)
         if not isinstance(ai_result, dict):
             return jsonify({"error": "AIレスポンスが不正です"}), 500
@@ -213,18 +217,30 @@ def diagnose():
             logger.error("AI診断エラー: %s", ai_result["error"])
             return jsonify({"error": ai_result["error"]}), 500
 
-        # ユーザープロファイル構築（problem テキストも反映）
-        problem_text = req.get("problem", "") or ""
-        user_profile = _build_user_profile_from_chart(chart_info, concerns, problem_text)
+        # AIが出力した重みでプロファイルのタグを強化
+        # theme_weights / worry_weights: {タグ名: 0.0〜1.0}
+        # 重みの高い順にタグを並べ替えてマッチング精度を向上させる
+        theme_weights: dict = ai_result.get("theme_weights") or {}
+        worry_weights: dict = ai_result.get("worry_weights") or {}
 
-        # マッチングエンジンで上位3商品を取得
+        ai_theme_tags = sorted(theme_weights, key=lambda k: theme_weights[k], reverse=True)
+        ai_worry_tags = sorted(worry_weights, key=lambda k: worry_weights[k], reverse=True)
+
+        # AI由来タグを先頭に、ルールベースタグを後ろに結合（重複除去）
+        merged_theme = list(dict.fromkeys(ai_theme_tags + base_profile.get("theme_tags", [])))
+        merged_worry = list(dict.fromkeys(ai_worry_tags + base_profile.get("worry_tags", [])))
+
+        user_profile = {**base_profile, "theme_tags": merged_theme, "worry_tags": merged_worry}
+
+        # マッチングエンジンで上位3商品を取得（AI重み反映後）
         top_products = recommend_products(user_profile, top_n=3)
 
-        # ランク1商品の石リストを取得し、AI選定石名をランク1の主要石に統一
+        # ランク1の主要石を確定し、AI結果に反映
         rank1_stones = top_products[0].get("stones", []) if top_products else []
-        if rank1_stones:
-            ai_result["stone_name"] = rank1_stones[0]
+        rank1_main_stone = rank1_stones[0] if rank1_stones else ""
         rank1_seed = "-".join(sorted(rank1_stones))
+        if rank1_main_stone:
+            ai_result["stone_name"] = rank1_main_stone
 
         # WooCommerce取得とGemini石ビーズ画像生成を並列実行
         rank1_bracelet_image: str | None = None
