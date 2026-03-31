@@ -227,11 +227,10 @@ def health_gcs():
             result["gcs_client"] = "❌ 初期化失敗（認証エラーの可能性）"
             return jsonify({"status": "error", "detail": result}), 500
 
-        # バケットへのアクセスを確認
+        # バケットへの参照を取得（reload不要、オブジェクト操作で権限確認）
         bucket = client.bucket(bucket_name)
-        bucket.reload()
-        result["bucket_name"] = bucket.name
-        result["gcs_client"] = "✅ 接続OK"
+        result["bucket_name"] = bucket_name
+        result["gcs_client"] = "✅ クライアント初期化OK"
 
         # テスト用の小さいファイルをアップロードして即削除
         import base64
