@@ -141,6 +141,45 @@ def health():
     return jsonify({"status": "ok", "service": "星の羅針盤 API"})
 
 
+@app.route('/api/health/gemini', methods=['GET'])
+def health_gemini():
+    """Gemini画像生成APIの疎通確認"""
+    import os, requests as req
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return jsonify({"status": "error", "message": "GEMINI_API_KEY が未設定"}), 500
+
+    from api.utils_image import GEMINI_MODEL, GEMINI_ENDPOINT
+    try:
+        resp = req.post(
+            GEMINI_ENDPOINT,
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": [{"text": "A simple blue circle on white background"}]}],
+                "generationConfig": {"responseModalities": ["IMAGE"]},
+            },
+            timeout=30,
+        )
+        if resp.status_code != 200:
+            return jsonify({
+                "status": "error",
+                "model": GEMINI_MODEL,
+                "http_status": resp.status_code,
+                "response": resp.text[:500],
+            }), 500
+
+        data = resp.json()
+        parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+        has_image = any(p.get("inlineData") for p in parts)
+        return jsonify({
+            "status": "ok" if has_image else "no_image",
+            "model": GEMINI_MODEL,
+            "parts": [list(p.keys()) for p in parts],
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/health/sheets-write', methods=['GET'])
 def health_sheets_write():
     """Sheetsへの書き込みテスト（テスト行を追加して即削除）"""
