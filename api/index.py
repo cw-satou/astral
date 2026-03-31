@@ -141,6 +141,33 @@ def health():
     return jsonify({"status": "ok", "service": "星の羅針盤 API"})
 
 
+@app.route('/api/health/gemini/models', methods=['GET'])
+def health_gemini_models():
+    """利用可能なGeminiモデル一覧を取得（画像生成対応モデルを抽出）"""
+    import os, requests as req
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        return jsonify({"status": "error", "message": "GEMINI_API_KEY が未設定"}), 500
+    try:
+        resp = req.get(
+            f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}",
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return jsonify({"status": "error", "http_status": resp.status_code}), 500
+        models = resp.json().get("models", [])
+        # generateContent対応 かつ flash/image/imagen を含むモデルを抽出
+        image_related = [
+            {"name": m["name"], "methods": m.get("supportedGenerationMethods", [])}
+            for m in models
+            if any(kw in m["name"].lower() for kw in ["flash", "image", "imagen"])
+            and "generateContent" in m.get("supportedGenerationMethods", [])
+        ]
+        return jsonify({"status": "ok", "image_related_models": image_related})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/health/gemini', methods=['GET'])
 def health_gemini():
     """Gemini画像生成APIの疎通確認"""
