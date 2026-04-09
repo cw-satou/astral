@@ -265,7 +265,6 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
 
     setInputArea(`
       <button class="btn" onclick="showProductCandidates()">💎 あなたへのおすすめブレスレットを見る</button>
-      <button class="btn btn-secondary" onclick="goLineRegister()">🔮 LINEでオラクルカードを受け取る</button>
     `);
   }
 

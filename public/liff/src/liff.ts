@@ -17,6 +17,18 @@ export async function initLiff(): Promise<void> {
   }
 }
 
+/**
+ * LIFF対応URLオープン
+ * LIFF環境では liff.openWindow、通常ブラウザでは window.open にフォールバック
+ */
+export function openUrl(url: string, external = true): void {
+  try {
+    liff.openWindow({ url, external });
+  } catch {
+    window.open(url, '_blank');
+  }
+}
+
 /** WooCommerce注文フォームにdiagnosis_idを埋め込む */
 export function fillOrderNote(): void {
   const params = new URLSearchParams(window.location.search);

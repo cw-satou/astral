@@ -14,8 +14,9 @@ let canvas: HTMLCanvasElement;
 let ctx: CanvasRenderingContext2D;
 
 function resize(): void {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  const container = canvas.parentElement;
+  canvas.width = container ? container.offsetWidth : window.innerWidth;
+  canvas.height = container ? container.offsetHeight : window.innerHeight;
 }
 
 function createStars(): void {

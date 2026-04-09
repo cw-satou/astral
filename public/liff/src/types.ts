@@ -103,6 +103,7 @@ declare global {
     init(config: { liffId: string }): Promise<void>;
     isLoggedIn(): boolean;
     getProfile(): Promise<{ userId: string; displayName: string }>;
+    openWindow(params: { url: string; external?: boolean }): void;
   };
 
   interface Window {

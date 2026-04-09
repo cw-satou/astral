@@ -34,19 +34,14 @@ export function selectMode(mode: string): void {
   }
 }
 
-/** 占星術情報入力フォーム表示 */
+/** ステップ1: お名前と性別の入力 */
 export function showAstrologicalInfoForm(): void {
   setProgress(1, 4, 'プロフィール入力');
-  addMsg('今のあなたについて少しだけ教えてください。\nはじめに、診断に必要な情報をお聞かせください。', false);
+  addMsg('今のあなたについて少しだけ教えてください。\nまず、お名前と性別を教えていただけますか？', false);
 
   const gender = state.formData.gender || '';
-  const birth = state.formData.birth || {};
-  const savedDate = birth.date || '';
-  const savedTime = birth.time || '';
-  const savedPlace = birth.place || '';
   const savedName = state.formData.name || '';
-
-  state.userState = 'astrological_info';
+  state.userState = 'name_gender';
 
   setInputArea(`
     <div class="input-field">
@@ -61,13 +56,28 @@ export function showAstrologicalInfoForm(): void {
         <button class="btn-toggle ${gender === 'その他' ? 'active' : ''}" onclick="selectGender('その他', this)">その他</button>
       </div>
     </div>
+    <button class="btn" onclick="nextStep()">次へ</button>
+  `);
+}
+
+/** ステップ2: 生年月日・出生時間・出生地の入力 */
+function showBirthInfoForm(): void {
+  const birth = state.formData.birth || {};
+  const savedDate = birth.date || '';
+  const savedTime = birth.time || '';
+  const savedPlace = birth.place || '';
+  state.userState = 'astrological_info';
+
+  addMsg('ありがとうございます。\n次に、星の配置を読み解くために、生まれた日時と場所を教えてください。\n出生時間・場所は任意ですが、あるとより精密に読み解けます。', false);
+
+  setInputArea(`
     <div class="input-field">
       <label>生年月日 *</label>
       <input type="text" id="birthDate" value="${savedDate}" required>
     </div>
     <div class="input-field">
       <label>出生時間</label>
-      <input type="text" id="birthTime" value="${savedTime}">
+      <input type="text" id="birthTime" value="${savedTime}" placeholder="例：14:30">
     </div>
     <div class="input-field">
       <label>出生地</label>
@@ -76,8 +86,11 @@ export function showAstrologicalInfoForm(): void {
     <button class="btn" onclick="nextStep()">次へ</button>
   `);
 
-  flatpickr('#birthDate', { locale: 'ja', dateFormat: 'Y-m-d', maxDate: 'today' });
-  flatpickr('#birthTime', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
+  // DOMへの挿入後にflatpickrを適用
+  setTimeout(() => {
+    flatpickr('#birthDate', { locale: 'ja', dateFormat: 'Y-m-d', maxDate: 'today' });
+    flatpickr('#birthTime', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
+  }, 0);
 }
 
 /** 性別選択 */
@@ -89,23 +102,31 @@ export function selectGender(gender: string, el: HTMLElement): void {
 
 /** 次のステップへ進む */
 export function nextStep(): void {
-  if (state.userState === 'astrological_info') {
+  // ステップ1: 名前・性別 → ステップ2へ
+  if (state.userState === 'name_gender') {
     const name = (document.getElementById('userName') as HTMLInputElement)?.value || '';
-    const date = (document.getElementById('birthDate') as HTMLInputElement)?.value;
-    const time = (document.getElementById('birthTime') as HTMLInputElement)?.value || '';
-    const place = (document.getElementById('birthPlace') as HTMLInputElement)?.value || '';
-
     if (!state.formData.gender) {
       addMsg('性別を選んでください', false);
       return;
     }
+    state.formData.name = name;
+    clearInputArea();
+    showBirthInfoForm();
+    return;
+  }
+
+  // ステップ2: 生年月日 → 悩み診断へ
+  if (state.userState === 'astrological_info') {
+    const date = (document.getElementById('birthDate') as HTMLInputElement)?.value;
+    const time = (document.getElementById('birthTime') as HTMLInputElement)?.value || '';
+    const place = (document.getElementById('birthPlace') as HTMLInputElement)?.value || '';
+
     if (!date) {
       addMsg('生年月日は必須です', false);
       return;
     }
 
     state.formData.birth = { date, time, place };
-    state.formData.name = name;
     saveProfileToLocalStorage();
     clearInputArea();
 
@@ -115,7 +136,9 @@ export function nextStep(): void {
       stepConcerns();
     }
     return;
-  } else if (state.userState === 'concerns') {
+  }
+
+  if (state.userState === 'concerns') {
     stepProblem();
   }
 }

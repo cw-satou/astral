@@ -7,6 +7,7 @@
 import { state } from './state';
 import { addMsg, setInputArea } from './chat';
 import { getUserNameForDisplay } from './profile';
+import { openUrl } from './liff';
 
 /** 推薦商品の型（APIレスポンスに合わせた形式） */
 interface Recommendation {
@@ -159,6 +160,7 @@ export function showProductCandidates(): void {
       ${cardsHtml}
     </div>
     <button class="btn" onclick="goToSelectedProduct()">🛒 選んだブレスレットのページへ</button>
+    <button class="btn btn-secondary" onclick="goLineRegister()">🔮 LINEでオラクルカードを受け取る</button>
     <button class="btn btn-secondary" onclick="restartFromBeginning()">🔄 もう一度診断する</button>
   `;
 
@@ -215,11 +217,11 @@ export function goToSelectedProduct(): void {
     const url = diagnosisId
       ? `${rec.product_url}${rec.product_url.includes('?') ? '&' : '?'}d=${diagnosisId}`
       : rec.product_url;
-    window.open(url, '_blank');
+    openUrl(url);
   } else if (rec.woo_product_id) {
     const base = `https://spicastar.info/atlas/?p=${rec.woo_product_id}`;
     const url = diagnosisId ? `${base}&d=${diagnosisId}` : base;
-    window.open(url, '_blank');
+    openUrl(url);
   } else {
     addMsg('商品ページの情報が見つかりませんでした。', false);
   }
@@ -238,5 +240,5 @@ export function goLineRegister(): void {
   ].filter(Boolean);
 
   const text = encodeURIComponent(lines.join('\n'));
-  window.location.href = `https://line.me/R/oaMessage/@586spjck/?${text}`;
+  window.location.href = `https://line.me/R/oaMessage/@586spjck/?text=${text}`;
 }

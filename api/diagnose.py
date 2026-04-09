@@ -296,7 +296,11 @@ def diagnose():
             "present_future": ai_result.get("present_future", ""),
             "element_detail": ai_result.get("element_diagnosis", ""),
             "oracle_name":    (ai_result.get("oracle_card") or {}).get("name", ""),
-            "oracle_position": (ai_result.get("oracle_card") or {}).get("position", ""),
+            "oracle_position": (
+                "正位置" if (ai_result.get("oracle_card") or {}).get("is_upright") is True
+                else "逆位置" if (ai_result.get("oracle_card") or {}).get("is_upright") is False
+                else ""
+            ),
             "stones":         "",
             "product_slug":   recommendations[0]["sku"] if recommendations else "",
             "user_line_id":   line_user_id or "",

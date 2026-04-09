@@ -208,16 +208,25 @@ textarea {
 
 /* hover */
 .btn:hover {
-    background: #666;
+    background: #5d4e8c;
     color: #fff;
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 6px 14px rgba(93, 78, 140, 0.25);
 }
 
 /* サブボタン */
 .btn-secondary {
-    background: #fff;
-    color: #222;
+    background: transparent;
+    color: #5d4e8c;
+    border-color: #c5bde0;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background: #f3f0fa;
+    color: #5d4e8c;
+    border-color: #5d4e8c;
+    box-shadow: 0 4px 10px rgba(93, 78, 140, 0.12);
 }
 
 /* 選択チップ */
