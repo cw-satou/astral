@@ -580,7 +580,8 @@ def create_today_fortune_prompt(user_input: dict, chart_data: dict = None) -> st
 
 
 def create_user_prompt(
-    user_input: dict, oracle_result: dict, chart_data: dict = None
+    user_input: dict, oracle_result: dict, chart_data: dict = None,
+    main_stone_name: str = "",
 ) -> str:
     """メイン診断用のユーザープロンプトを構築する"""
     common_context = build_common_user_context(
@@ -609,6 +610,13 @@ def create_user_prompt(
     else:
         problem_instruction = f"今回のユーザーの悩みカテゴリは「{concerns_text}」です。すべてのセクションで、この悩みに沿った場面や感情を交えてください。"
 
+    # 石名が確定している場合はプロンプトに注入する
+    stone_instruction = (
+        f"\n【確定済みの軸の石：{main_stone_name}】\n"
+        f"bracelet_proposal と stone_support_message は、必ず「{main_stone_name}」を中心に書くこと。\n"
+        f"「{main_stone_name}」という石名を文中に1回以上明示すること。\n"
+    ) if main_stone_name else ""
+
     return f"""
 以下の情報をもとに、パーソナル診断レポートを作成してください。
 
@@ -617,7 +625,7 @@ def create_user_prompt(
 具体的で分かりやすい言葉で書いてください。
 
 {problem_instruction}
-
+{stone_instruction}
 {common_context}
 
 【文体のルール】
@@ -635,8 +643,8 @@ def create_user_prompt(
 "present_future": "今の状態と、これからの変化の方向性を200文字程度で。「いまのあなたは〜という状態にあります」と現状を整理し、「〜を意識することで」と具体的な行動につながるヒントを伝える。ユーザーの悩みに直接沿って書く。",
 "element_diagnosis": "星座バランスから分かるエネルギーの偏りを150文字程度で。「最近、〇〇な気持ちになることはありませんか？」と問いかけてから、バランスの特徴を説明する。ユーザーの悩みに絡めた具体例を1つ入れる。",
 "oracle_message": "引いたカード「{oracle_result['card']['name']}」の{position_str}が示すヒントを150文字程度で。「このカードが示すのは〜ということです」と、今のあなたへの示唆として伝える。ユーザーの悩みへの気づきにつなげる。",
-"bracelet_proposal": "今のあなたに必要な石のエネルギーを日常に取り入れることで期待できる変化を150文字程度で。ユーザーの悩みに関連する具体的な場面（例：「〜で困っているとき、石を身につけることで」）を描く。",
-"stone_support_message": "今のあなたに必要な石のエネルギー特性がユーザーの現状にどう作用するかを200文字程度で。不足エレメントを補う石の性質と、それがどうユーザーの状況に働きかけるかを具体的に説明する。",
+"bracelet_proposal": "【確定済みの石名】を必ず文中に入れ、その石のエネルギーを日常に取り入れることで期待できる変化を150文字程度で。ユーザーの悩みに関連する具体的な場面（例：「〜で困っているとき、この石を身につけることで」）を描く。",
+"stone_support_message": "【確定済みの石名】を必ず文中に入れ、その石のエネルギー特性がユーザーの現状にどう作用するかを200文字程度で。不足エレメントを補う石の性質と、それがどうユーザーの状況に働きかけるかを具体的に説明する。",
 "daily_advice": "今日からできる具体的なアクションを3つ、それぞれ25文字以内で。カンマ区切り。ユーザーの悩みに関連する実践的な行動を含める。",
 "lucky_color": "今日意識するとよいカラー（1色、日本語）",
 "affirmation": "自己肯定のひと言を50文字程度で。「私は…」で始める。ユーザーの悩みに関連した前向きな言葉にする。",
@@ -701,12 +709,17 @@ def generate_today_fortune(user_input: dict, chart_data: dict = None) -> str:
 
 # ===== メイン診断生成 =====
 
-def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict:
+def generate_bracelet_reading(
+    user_input: dict,
+    chart_data: dict = None,
+    main_stone_name: str = "",
+) -> dict:
     """AIを使ったブレスレット診断を実行する
 
     オラクルカードをランダムに引き、ユーザー情報と合わせて診断テキストを生成する。
     theme_weights・worry_weights を数値で返し、後続のマッチングに使用する。
-    軸となる石はマッチングエンジンが後から決定する。
+    main_stone_name が指定されている場合、bracelet_proposal / stone_support_message は
+    その石名を中心に書くようにプロンプトに注入する。
     """
     client = _get_client()
     if not client:
@@ -738,7 +751,7 @@ def generate_bracelet_reading(user_input: dict, chart_data: dict = None) -> dict
         "- destiny_map では、出生時間・出生地の情報があれば星座バランスの分析に活かしてください。\n"
     ) + SYSTEM_PROMPT
 
-    user_msg = create_user_prompt(user_input, oracle_result, chart_data)
+    user_msg = create_user_prompt(user_input, oracle_result, chart_data, main_stone_name)
 
     try:
         resp = client.chat.completions.create(

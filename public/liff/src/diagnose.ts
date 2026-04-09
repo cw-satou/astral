@@ -238,10 +238,10 @@ async function displayDivinationResult(result: Record<string, unknown>): Promise
     await addMsg('今のあなたを整える石と、そのサポートをお伝えします。', false);
 
     if (result.bracelet_proposal) {
-      await appendSection(chatBox, '💎 あなたに選ばれた石', result.bracelet_proposal as string, images.beads);
+      await appendSection(chatBox, `💎 ${stoneName}`, result.bracelet_proposal as string, images.beads);
     }
     if (result.stone_support_message) {
-      await appendSection(chatBox, '💐 石からのメッセージ', result.stone_support_message as string);
+      await appendSection(chatBox, `💐 ${stoneName}からのメッセージ`, result.stone_support_message as string);
     }
 
     // アファメーション・ラッキーカラー・アドバイスをまとめて1メッセージに

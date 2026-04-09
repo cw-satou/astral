@@ -209,8 +209,25 @@ def diagnose():
         problem_text = req.get("problem", "") or ""
         base_profile = _build_user_profile_from_chart(chart_info, concerns, problem_text)
 
+        # ===== 予備マッチング（石名をAIに渡すため先行実行） =====
+        # base_profile（ルールベースのみ）で仮の1位商品を取得し、
+        # その主要石をAIプロンプトに注入することで bracelet_proposal の一貫性を確保する。
+        # 後続の本マッチング（AI重み反映後）で順位が変わることがあるが、
+        # 上位にランクされた石は概ね共通するため一致率は高い。
+        try:
+            prelim_products = recommend_products(base_profile, top_n=1)
+            prelim_rank1_stone = (prelim_products[0].get("stones") or [""])[0] if prelim_products else ""
+        except Exception as e:
+            logger.warning("予備マッチングエラー（石名なしでAI実行）: %s", e)
+            prelim_rank1_stone = ""
+
+        logger.info("予備マッチング完了: 暫定主要石=%s", prelim_rank1_stone)
+
         # AI診断文＋オラクルカード生成（テーマ・悩み重みも出力させる）
-        ai_result = generate_bracelet_reading(req, chart_data=chart_data)
+        # prelim_rank1_stone を渡すことで bracelet_proposal がその石を中心に生成される
+        ai_result = generate_bracelet_reading(
+            req, chart_data=chart_data, main_stone_name=prelim_rank1_stone
+        )
         if not isinstance(ai_result, dict):
             return jsonify({"error": "AIレスポンスが不正です"}), 500
         if ai_result.get("error"):
@@ -232,7 +249,7 @@ def diagnose():
 
         user_profile = {**base_profile, "theme_tags": merged_theme, "worry_tags": merged_worry}
 
-        # マッチングエンジンで上位3商品を取得（AI重み反映後）
+        # 本マッチング（AI重み反映後）
         top_products = recommend_products(user_profile, top_n=3)
 
         # ランク1の主要石を確定し、AI結果に反映
@@ -241,6 +258,13 @@ def diagnose():
         rank1_seed = "-".join(sorted(rank1_stones))
         if rank1_main_stone:
             ai_result["stone_name"] = rank1_main_stone
+
+        # 石名が変わった場合はログに記録
+        if prelim_rank1_stone and rank1_main_stone and prelim_rank1_stone != rank1_main_stone:
+            logger.info(
+                "マッチング石名変化: 暫定=%s → 確定=%s（bracelet_proposalは暫定石で生成済み）",
+                prelim_rank1_stone, rank1_main_stone,
+            )
 
         # WooCommerce取得とGemini石ビーズ画像生成を並列実行
         rank1_bracelet_image: str | None = None
